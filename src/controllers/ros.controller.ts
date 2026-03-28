@@ -42,8 +42,10 @@ export class ROSController {
     static async saveDraft(req: any, res: any) {
         const { id: wedding_id } = req.params;
         const { draft_json } = req.body;
-        const result = await ROSService.saveDraft(wedding_id, req.user.sub, draft_json);
-        return res.json(result);
+        await ROSService.saveDraft(wedding_id, req.user.sub, draft_json);
+        // Return in RosDraft format so mobile client gets draft_json back
+        const draft = await ROSService.getDraft(wedding_id);
+        return res.json(draft);
     }
 
     /**

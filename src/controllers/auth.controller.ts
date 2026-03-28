@@ -23,7 +23,13 @@ export class AuthController {
      * 1.3.1 Login (OIDC Callback simulation)
      */
     static async login(req: any, res: any) {
-        const { providerType, providerSubject } = req.body;
+        const { providerType, providerSubject } = req.body ?? {};
+
+        if (typeof providerType !== 'string' || !providerType.trim() ||
+            typeof providerSubject !== 'string' || !providerSubject.trim()) {
+            return res.status(400).json({ error: 'providerType and providerSubject are required.' });
+        }
+
         const limiterKey = providerSubject || req.ip || 'anonymous';
 
         // 1.3.6 Rate Limiting
@@ -67,7 +73,12 @@ export class AuthController {
             return res.status(400).json({ error: 'Password must be between 8 and 128 characters.' });
         }
 
-        // For email/password, subject is the email
+        // For email/password, subject is the email — reject if already registered
+        const existing = await AuthService.resolveUserByProvider('email_password', emailStr);
+        if (existing) {
+            return res.status(409).json({ error: 'E-mailadres is al in gebruik.' });
+        }
+
         const userId = await AuthService.registerUserWithIdentity(emailStr, nameStr, 'email_password', emailStr);
         const tokens = await AuthService.generateTokens(userId, []);
 

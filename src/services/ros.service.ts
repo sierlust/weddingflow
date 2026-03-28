@@ -263,7 +263,10 @@ export class ROSService {
     if (!latest) {
       return null;
     }
-    if (!latest.suppliers_shared_to.includes(orgId)) {
+    // Allow any supplier assigned to this wedding to see the published ROS.
+    // If suppliers_shared_to is empty (no owner_supplier_org_ids set on items),
+    // the published ROS is visible to all authenticated suppliers.
+    if (latest.suppliers_shared_to.length > 0 && !latest.suppliers_shared_to.includes(orgId)) {
       return null;
     }
     return clone(latest);
@@ -515,14 +518,33 @@ export class ROSService {
       .sort((a, b) => a.sort_index - b.sort_index);
   }
 
+  /**
+   * Convert a time value (either "HH:MM" or full ISO string) to minutes-since-midnight (number).
+   * Returns NaN if unparseable.
+   */
+  private static parseTimeToMinutes(value: string): number {
+    if (!value) return NaN;
+    // "HH:MM" format
+    const hmMatch = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+    if (hmMatch) {
+      const h = parseInt(hmMatch[1], 10);
+      const m = parseInt(hmMatch[2], 10);
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return h * 60 + m;
+      return NaN;
+    }
+    // ISO datetime
+    const ms = new Date(value).getTime();
+    return Number.isNaN(ms) ? NaN : ms;
+  }
+
   private static validateBlockingErrors(items: RunSheetItem[]): string[] {
     const errors: string[] = [];
     for (const item of items) {
       if (!item.title.trim()) {
         errors.push(`Item ${item.id} missing title`);
       }
-      const start = new Date(item.start_at).getTime();
-      const end = new Date(item.end_at).getTime();
+      const start = this.parseTimeToMinutes(item.start_at);
+      const end = this.parseTimeToMinutes(item.end_at);
       if (Number.isNaN(start) || Number.isNaN(end)) {
         errors.push(`Item ${item.id} has invalid time`);
       } else if (start >= end) {
