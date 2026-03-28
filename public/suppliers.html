@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leveranciers zoeken</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-1: #F1F5F9;
+        --bg-2: #E2E8F0;
+        --card: #FFFFFF;
+        --line: #E2E8F0;
+        --ink: #0F172A;
+        --muted: #64748B;
+        --primary: #2563EB;
+        --primary-strong: #1D4ED8;
+        --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.06);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg-1);
+      }
+
+      .app {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 16px 14px 26px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        padding: 18px;
+      }
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Inter", sans-serif; font-weight: 700; letter-spacing: -0.02em;
+        font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      }
+
+      .sub {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 16px;
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #fff;
+        background: var(--primary);
+        transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+      }
+
+      .btn:hover {
+        background: var(--primary-strong);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn.ghost {
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .btn.ghost:hover {
+        background: var(--bg-1);
+        border-color: #94A3B8;
+        box-shadow: none;
+      }
+
+      .filters {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr)) auto auto;
+        gap: 8px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.9rem;
+        padding: 9px 11px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      }
+
+      .cards {
+        margin-top: 12px;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .card {
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        overflow: hidden;
+        transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        border-color: #94A3B8;
+      }
+
+      .photo {
+        width: 100%;
+        height: 170px;
+        object-fit: cover;
+        background: var(--bg-2);
+      }
+
+      .card-body {
+        padding: 10px;
+      }
+
+      .name {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+
+      .meta {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .rating {
+        margin-top: 7px;
+        font-size: 0.86rem;
+      }
+
+      .empty {
+        margin-top: 12px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        background: var(--card);
+        padding: 20px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      @media (max-width: 980px) {
+        .filters {
+          grid-template-columns: 1fr;
+        }
+
+        .cards {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .cards {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="panel">
+        <div class="top">
+          <div>
+            <h1>Leveranciers zoeken</h1>
+            <p class="sub">Filter op soort en budget, open het profiel en voeg toe aan je bruiloft.</p>
+          </div>
+          <div class="top-actions">
+            <a class="btn ghost" href="/">Dashboard</a>
+            <button id="btn-nav-logout" class="btn ghost" type="button">Uitloggen</button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <input id="filter-query" placeholder="Zoek op naam of locatie" />
+          <select id="filter-category">
+            <option value="">Alle soorten</option>
+          </select>
+          <select id="filter-budget">
+            <option value="">Alle budgetten</option>
+            <option value="€">€</option>
+            <option value="€€">€€</option>
+            <option value="€€€">€€€</option>
+            <option value="€€€€">€€€€</option>
+            <option value="€€€€€">€€€€€</option>
+          </select>
+          <select id="filter-rating">
+            <option value="">Reviews: alles</option>
+            <option value="4.5">4.5+ sterren</option>
+            <option value="4">4+ sterren</option>
+            <option value="3">3+ sterren</option>
+          </select>
+          <button id="btn-filter" class="btn" type="button">Filter</button>
+          <button id="btn-reset" class="btn ghost" type="button">Reset</button>
+        </div>
+
+        <section id="cards" class="cards"></section>
+        <div id="empty" class="empty" style="display: none">Geen leveranciers gevonden voor deze filters.</div>
+      </section>
+    </main>
+
+    <script>
+      const SESSION_STORAGE_KEY = "managementapp.session";
+
+      function getStoredSession() {
+        try {
+          const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      }
+
+      async function logoutToLogin() {
+        const refreshToken = getStoredSession()?.tokens?.refreshToken;
+        if (refreshToken) {
+          await fetch("/v1/auth/logout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+          }).catch(() => null);
+        }
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+        window.location.href = "/";
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function starsForRating(rating) {
+        const filled = Math.max(1, Math.min(5, Math.round(Number(rating || 0))));
+        return `${"★".repeat(filled)}${"☆".repeat(5 - filled)}`;
+      }
+
+      function defaultSupplierPhoto() {
+        return "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80";
+      }
+
+      async function loadSuppliers() {
+        const query = document.getElementById("filter-query").value.trim();
+        const category = document.getElementById("filter-category").value;
+        const budget = document.getElementById("filter-budget").value;
+        const minRating = document.getElementById("filter-rating").value;
+
+        const params = new URLSearchParams();
+        if (query) params.set("q", query);
+        if (category) params.set("category", category);
+        if (budget) params.set("budget", budget);
+        if (minRating) params.set("min_rating", minRating);
+
+        const response = await fetch(`/v1/suppliers?${params.toString()}`);
+        const data = response.ok ? await response.json() : { suppliers: [], meta: { categories: [] } };
+        const cardsNode = document.getElementById("cards");
+        const emptyNode = document.getElementById("empty");
+
+        const categories = Array.isArray(data.meta?.categories) ? data.meta.categories : [];
+        const categoryNode = document.getElementById("filter-category");
+        if (categoryNode.options.length <= 1 && categories.length) {
+          categories.forEach((categoryValue) => {
+            const option = document.createElement("option");
+            option.value = categoryValue;
+            option.textContent = categoryValue;
+            categoryNode.appendChild(option);
+          });
+        }
+
+        const suppliers = Array.isArray(data.suppliers) ? data.suppliers : [];
+        if (!suppliers.length) {
+          cardsNode.innerHTML = "";
+          emptyNode.style.display = "block";
+          return;
+        }
+
+        emptyNode.style.display = "none";
+        cardsNode.innerHTML = suppliers
+          .map(
+            (supplier) => {
+              const emailLine = String(supplier.email || "").trim()
+                ? `<p class="meta">${escapeHtml(supplier.email)}</p>`
+                : "";
+              const descSnippet = String(supplier.description || "").trim().slice(0, 90);
+              const descLine = descSnippet ? `<p class="meta">${escapeHtml(descSnippet)}</p>` : "";
+              const photoUrl = String(supplier.photoUrl || "").trim() || defaultSupplierPhoto();
+              return `
+              <a class="card" href="/suppliers/${encodeURIComponent(supplier.id)}">
+                <img class="photo" src="${escapeHtml(photoUrl)}" alt="${escapeHtml(supplier.name)}" loading="lazy" />
+                <div class="card-body">
+                  <h3 class="name">${escapeHtml(supplier.name)}</h3>
+                  <p class="meta">${escapeHtml(supplier.location)} · ${escapeHtml(supplier.category)}</p>
+                  <p class="meta">Budget: ${escapeHtml(supplier.budgetTier)}</p>
+                  ${emailLine}
+                  <p class="rating">${starsForRating(supplier.rating)} · ${Number(supplier.rating || 0).toFixed(1)} (${Number(
+              supplier.reviewsCount || 0
+            )} reviews)</p>
+                  ${descLine}
+                </div>
+              </a>
+            `;
+            }
+          )
+          .join("");
+      }
+
+      function resetFilters() {
+        document.getElementById("filter-query").value = "";
+        document.getElementById("filter-category").value = "";
+        document.getElementById("filter-budget").value = "";
+        document.getElementById("filter-rating").value = "";
+        void loadSuppliers();
+      }
+
+      document.getElementById("btn-filter").addEventListener("click", () => {
+        void loadSuppliers();
+      });
+      document.getElementById("btn-reset").addEventListener("click", resetFilters);
+      document.getElementById("btn-nav-logout").addEventListener("click", () => {
+        void logoutToLogin();
+      });
+      document.getElementById("filter-query").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          void loadSuppliers();
+        }
+      });
+
+      void loadSuppliers();
+    </script>
+  </body>
+</html>

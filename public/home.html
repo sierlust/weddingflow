@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeddingFlow — Plan jouw droombruiloft</title>
+  <meta name="description" content="Plan jouw droombruiloft — alles op één plek. Vind en werk samen met de beste leveranciers in jouw regio." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #F1F5F9;
+      --bg-2: #E2E8F0;
+      --card: #FFFFFF;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --primary: #2563EB;
+      --primary-strong: #1D4ED8;
+      --primary-soft: #EFF6FF;
+      --ok: #059669;
+      --shadow: 0 1px 3px rgba(15,23,42,0.08), 0 4px 16px rgba(15,23,42,0.06);
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--card);
+    }
+
+    /* ——— Navbar ——— */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .navbar-inner {
+      max-width: 1240px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 64px;
+    }
+    .logo { font-weight: 700; font-size: 1.25rem; color: var(--primary); text-decoration: none; letter-spacing: -0.02em; }
+    .nav-links { display: flex; gap: 28px; list-style: none; padding: 0; }
+    .nav-links a { text-decoration: none; color: var(--ink); font-size: 0.9rem; font-weight: 500; transition: color 0.15s; }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-actions { display: flex; gap: 10px; align-items: center; }
+    .btn {
+      border: 0; border-radius: 8px; padding: 9px 18px;
+      font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      color: #fff; background: var(--primary); text-decoration: none;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+    .btn:hover { background: var(--primary-strong); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    .btn:active { transform: translateY(1px); }
+    .btn.ghost { border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+    .btn.ghost:hover { background: var(--bg-1); border-color: #94A3B8; box-shadow: none; }
+    .btn.large { padding: 14px 28px; font-size: 1rem; border-radius: 10px; }
+    .btn.outline-white { border: 2px solid #fff; background: transparent; color: #fff; }
+    .btn.outline-white:hover { background: rgba(255,255,255,0.15); box-shadow: none; }
+
+    /* ——— Hero ——— */
+    .hero {
+      margin-top: 64px;
+      position: relative;
+      min-height: 85vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      background: linear-gradient(rgba(15,23,42,0.45), rgba(15,23,42,0.55)),
+                  url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+      color: #fff;
+      padding: 60px 20px;
+    }
+    .hero-content { max-width: 680px; }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 700; letter-spacing: -0.03em;
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      line-height: 1.6; opacity: 0.92; margin-bottom: 32px;
+    }
+    .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ——— Sections ——— */
+    .section {
+      max-width: 1240px; margin: 0 auto;
+      padding: 80px 20px;
+    }
+    .section-title {
+      text-align: center; margin-bottom: 48px;
+    }
+    .section-title h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700; letter-spacing: -0.02em;
+    }
+    .section-title p {
+      margin-top: 10px; color: var(--muted); font-size: 1.05rem; max-width: 560px; margin-inline: auto;
+    }
+
+    /* ——— Steps ——— */
+    .steps {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;
+    }
+    .step {
+      text-align: center; padding: 28px 20px;
+      border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+    }
+    .step-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: var(--primary-soft); color: var(--primary);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; margin-bottom: 16px;
+    }
+    .step h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .step p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+
+    /* ——— Categories ——— */
+    .categories {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px;
+    }
+    .cat-card {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 22px 14px; text-align: center;
+      border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+      text-decoration: none; color: var(--ink);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .cat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: #94A3B8; }
+    .cat-icon { font-size: 2rem; }
+    .cat-card span { font-weight: 600; font-size: 0.9rem; }
+
+    /* ——— Testimonials ——— */
+    .testimonials {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .testimonial {
+      border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+      padding: 24px; position: relative;
+    }
+    .testimonial-quote {
+      font-size: 0.95rem; line-height: 1.6; color: var(--ink); font-style: italic;
+      margin-bottom: 16px;
+    }
+    .testimonial-author { font-weight: 600; font-size: 0.85rem; }
+    .testimonial-role { color: var(--muted); font-size: 0.82rem; }
+    .testimonial-stars { color: #F59E0B; font-size: 0.9rem; margin-bottom: 10px; }
+
+    /* ——— Featured Suppliers ——— */
+    .featured-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    .featured-card {
+      border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+      background: var(--card); text-decoration: none; color: var(--ink);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .featured-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .featured-img {
+      width: 100%; height: 160px; object-fit: cover; background: var(--bg-2);
+    }
+    .featured-body { padding: 12px 14px; }
+    .featured-body h4 { font-size: 0.95rem; margin-bottom: 4px; }
+    .featured-body p { color: var(--muted); font-size: 0.82rem; }
+
+    /* ——— CTA Banner ——— */
+    .cta-banner {
+      background: var(--primary); color: #fff; text-align: center;
+      padding: 60px 20px; border-radius: 18px; margin: 0 20px;
+    }
+    .cta-banner h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin-bottom: 12px; }
+    .cta-banner p { opacity: 0.9; margin-bottom: 24px; max-width: 480px; margin-inline: auto; }
+
+    /* ——— Footer ——— */
+    .footer {
+      background: var(--ink); color: rgba(255,255,255,0.7);
+      padding: 60px 20px 30px;
+    }
+    .footer-inner {
+      max-width: 1240px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 40px;
+    }
+    .footer h4 { color: #fff; font-size: 0.9rem; margin-bottom: 14px; }
+    .footer p, .footer a { font-size: 0.85rem; line-height: 1.7; }
+    .footer a { color: rgba(255,255,255,0.7); text-decoration: none; }
+    .footer a:hover { color: #fff; }
+    .footer-links { list-style: none; padding: 0; }
+    .footer-links li { margin-bottom: 6px; }
+    .footer-bottom {
+      max-width: 1240px; margin: 40px auto 0;
+      padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.82rem;
+    }
+    .footer-bottom a { margin-left: 18px; }
+
+    /* ——— Responsive ——— */
+    @media (max-width: 900px) {
+      .steps, .testimonials { grid-template-columns: 1fr; }
+      .featured-grid { grid-template-columns: 1fr 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 600px) {
+      .featured-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .hero { min-height: 70vh; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="/" class="logo">WeddingFlow</a>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/suppliers">Leveranciers</a></li>
+      <li><a href="/inspiratie">Inspiratie</a></li>
+      <li><a href="/hoe-het-werkt">Hoe het werkt</a></li>
+      <li><a href="/p0">P0</a></li>
+      <li><a href="/p1">P1</a></li>
+      <li><a href="/p2">P2</a></li>
+      <li><a href="/p3">P3</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="/login" class="btn ghost">Inloggen als leverancier</a>
+      <a href="/register" class="btn" style="background:#059669;">Aanmelden als leverancier</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Plan jouw droombruiloft — alles op één plek</h1>
+    <p>Stel je perfecte dag samen met de beste leveranciers in jouw regio. Zoek, vergelijk en werk samen — van eerste idee tot jullie grote dag.</p>
+    <div class="hero-ctas">
+      <a href="/register" class="btn large">Begin mijn bruiloft plannen</a>
+      <a href="/suppliers" class="btn large outline-white">Bekijk leveranciers</a>
+    </div>
+  </div>
+</section>
+
+<!-- Hoe het werkt -->
+<section class="section">
+  <div class="section-title">
+    <h2>Zo werkt WeddingFlow</h2>
+    <p>In drie stappen van zoeken naar samenwerken.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">🔍</div>
+      <h3>Zoek &amp; vergelijk</h3>
+      <p>Blader door honderden leveranciers, filter op categorie, regio en budget. Bekijk portfolio's, reviews en beschikbaarheid.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🤝</div>
+      <h3>Nodig uit &amp; werk samen</h3>
+      <p>Nodig je favoriete leveranciers uit. Werk samen in een gedeelde ruimte met berichten, documenten en draaiboek.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">💒</div>
+      <h3>Vier jullie dag</h3>
+      <p>Met alles op één plek, van planning tot draaiboek, is jullie bruiloft perfect voorbereid. Geniet van jullie grote dag!</p>
+    </div>
+  </div>
+</section>
+
+<!-- Categorieën -->
+<section class="section" style="background: var(--bg-1);">
+  <div style="max-width: 1240px; margin: 0 auto;">
+    <div class="section-title">
+      <h2>Vind de perfecte leverancier</h2>
+      <p>Bekijk leveranciers per categorie.</p>
+    </div>
+    <div class="categories" id="categories">
+      <a href="/suppliers?category=Fotograaf" class="cat-card"><span class="cat-icon">📸</span><span>Fotograaf</span></a>
+      <a href="/suppliers?category=Videograaf" class="cat-card"><span class="cat-icon">🎬</span><span>Videograaf</span></a>
+      <a href="/suppliers?category=Bloemist" class="cat-card"><span class="cat-icon">💐</span><span>Bloemist</span></a>
+      <a href="/suppliers?category=DJ" class="cat-card"><span class="cat-icon">🎵</span><span>DJ / Muziek</span></a>
+      <a href="/suppliers?category=Catering" class="cat-card"><span class="cat-icon">🍽️</span><span>Catering</span></a>
+      <a href="/suppliers?category=Locatie" class="cat-card"><span class="cat-icon">🏰</span><span>Locatie</span></a>
+      <a href="/suppliers?category=Trouwjurk" class="cat-card"><span class="cat-icon">👗</span><span>Trouwjurk</span></a>
+      <a href="/suppliers?category=Styling" class="cat-card"><span class="cat-icon">✨</span><span>Styling</span></a>
+      <a href="/suppliers?category=Ceremoniemeester" class="cat-card"><span class="cat-icon">🎤</span><span>Ceremoniemeester</span></a>
+      <a href="/suppliers?category=Trouwringen" class="cat-card"><span class="cat-icon">💍</span><span>Trouwringen</span></a>
+      <a href="/suppliers?category=Bruidstaart" class="cat-card"><span class="cat-icon">🎂</span><span>Bruidstaart</span></a>
+      <a href="/suppliers?category=Vervoer" class="cat-card"><span class="cat-icon">🚗</span><span>Vervoer</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="section">
+  <div class="section-title">
+    <h2>Wat bruidsparen zeggen</h2>
+    <p>Ontdek hoe andere stellen hun droombruiloft hebben gepland met WeddingFlow.</p>
+  </div>
+  <div class="testimonials">
+    <div class="testimonial">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-quote">"WeddingFlow heeft ons zoveel stress bespaard. Alles op één plek: berichten, documenten, draaiboek. Onze leveranciers waren ook enthousiast!"</p>
+      <p class="testimonial-author">Emma &amp; Thomas</p>
+      <p class="testimonial-role">Getrouwd in juni 2025 · Amsterdam</p>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-quote">"Ik had geen idee waar ik moest beginnen. Via de leveranciersgids vond ik de perfecte fotograaf en bloemist. De samenwerking verliep super soepel."</p>
+      <p class="testimonial-author">Lisa &amp; Mark</p>
+      <p class="testimonial-role">Getrouwd in september 2025 · Utrecht</p>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-quote">"Het draaiboek-overzicht gaf ons rust op de trouwdag. Alle leveranciers wisten precies wat ze moesten doen en wanneer. Echt een aanrader!"</p>
+      <p class="testimonial-author">Sophie &amp; Daan</p>
+      <p class="testimonial-role">Getrouwd in mei 2025 · Rotterdam</p>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Suppliers -->
+<section class="section" style="background: var(--bg-1);">
+  <div style="max-width: 1240px; margin: 0 auto;">
+    <div class="section-title">
+      <h2>Uitgelichte leveranciers</h2>
+      <p>Populaire en top-beoordeelde leveranciers op ons platform.</p>
+    </div>
+    <div class="featured-grid" id="featured-suppliers"></div>
+    <div style="text-align: center; margin-top: 28px;">
+      <a href="/suppliers" class="btn large">Bekijk alle leveranciers</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Banner -->
+<section class="section">
+  <div class="cta-banner">
+    <h2>Ben jij leverancier?</h2>
+    <p>Bereik duizenden bruidsparen en laat je bedrijf groeien. Meld je vandaag nog aan.</p>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="/register" class="btn large" style="background: #fff; color: var(--primary);">Gratis aanmelden</a>
+      <a href="/hoe-het-werkt-leveranciers" class="btn large outline-white">Meer informatie</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <a href="/" class="logo" style="color: #fff; font-size: 1.3rem;">WeddingFlow</a>
+      <p style="margin-top: 12px; max-width: 280px;">Het trouwplanningsplatform waar bruidsparen en leveranciers samen de perfecte bruiloft creëren.</p>
+    </div>
+    <div>
+      <h4>Voor bruidsparen</h4>
+      <ul class="footer-links">
+        <li><a href="/suppliers">Leveranciers zoeken</a></li>
+        <li><a href="/inspiratie">Inspiratie</a></li>
+        <li><a href="/hoe-het-werkt">Hoe het werkt</a></li>
+        <li><a href="/register">Gratis aanmelden</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Voor leveranciers</h4>
+      <ul class="footer-links">
+        <li><a href="/hoe-het-werkt-leveranciers">Hoe het werkt</a></li>
+        <li><a href="/prijzen">Prijzen</a></li>
+        <li><a href="/register">Aanmelden</a></li>
+        <li><a href="/login">Inloggen</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>WeddingFlow</h4>
+      <ul class="footer-links">
+        <li><a href="/over-ons">Over ons</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 WeddingFlow. Alle rechten voorbehouden.</span>
+    <div>
+      <a href="/algemene-voorwaarden">Algemene voorwaarden</a>
+      <a href="/privacybeleid">Privacybeleid</a>
+      <a href="/cookiebeleid">Cookiebeleid</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Load featured suppliers from API
+  async function loadFeatured() {
+    try {
+      const res = await fetch('/v1/suppliers?limit=4');
+      const data = res.ok ? await res.json() : { suppliers: [] };
+      const suppliers = Array.isArray(data.suppliers) ? data.suppliers.slice(0, 4) : [];
+      const grid = document.getElementById('featured-suppliers');
+      if (!suppliers.length) {
+        grid.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;">Nog geen leveranciers beschikbaar.</p>';
+        return;
+      }
+      grid.innerHTML = suppliers.map(s => {
+        const photo = String(s.photoUrl || '').trim() || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80';
+        const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return `<a class="featured-card" href="/suppliers/${encodeURIComponent(s.id)}">
+          <img class="featured-img" src="${esc(photo)}" alt="${esc(s.name)}" loading="lazy" />
+          <div class="featured-body">
+            <h4>${esc(s.name)}</h4>
+            <p>${esc(s.category)} · ${esc(s.location)}</p>
+          </div>
+        </a>`;
+      }).join('');
+    } catch { /* silent */ }
+  }
+
+  loadFeatured();
+</script>
+</body>
+</html>

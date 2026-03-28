@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>19. Inlogpagina — WeddingFlow</title>
+  <link rel="stylesheet" href="p0.css" />
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="/">WeddingFlow</a>
+    <nav class="header-nav"><a href="/p0">P0</a><a href="/p1">P1</a><a href="/p2">P2</a><a href="/p3">P3</a><a href="index.html">Index</a><a href="/sitemap">Sitemap</a></nav>
+  </header>
+  <main class="main">
+    <h1 class="page-title">19. Inlogpagina</h1>
+    <p class="page-sub">E-mail + wachtwoord, Google SSO, automatische rol-detectie, link naar wachtwoord vergeten</p>
+    
+<section class="section">
+  <div class="grid">
+    <div class="card">
+      <h2>Doel van dit scherm</h2>
+      <p>E-mail + wachtwoord, Google SSO, automatische rol-detectie, link naar wachtwoord vergeten</p>
+    </div>
+    <div class="card">
+      <h2>Belangrijkste onderdelen</h2>
+      <ul class="list"><li>E-mail</li><li>wachtwoord</li><li>Google SSO</li><li>automatische rol-detectie</li><li>link naar wachtwoord vergeten</li></ul>
+    </div>
+    <div class="card">
+      <h2>Primaire acties</h2>
+      <ul class="list">
+        <li>Doorgaan / bevestigen</li>
+        <li>Terug / annuleren</li>
+        <li>Opslaan</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="card">
+    <h2>Inloggen</h2>
+    <p class="helper">Gebruik de testaccounts om in te loggen.</p>
+    <div class="helper">Leverancier: `test@leverancier.nl` · `test123`</div>
+    <div class="helper">Bruidspaar: `test@bruidspaar.nl` · `test123`</div>
+    <div id="login-error" class="error" role="alert">Onjuiste gegevens. Probeer het opnieuw.</div>
+    <form id="login-form" class="form">
+      <div class="input">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" autocomplete="username" required />
+      </div>
+      <div class="input">
+        <label for="password">Wachtwoord</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+      </div>
+      <button class="btn-primary" type="submit">Inloggen</button>
+    </form>
+  </div>
+</section>
+
+    <div class="nav-row">
+      <a href="index.html">Vorige</a>
+      <a href="023-registratie-rolkeuze.html">Volgende</a>
+    </div>
+  </main>
+  <footer class="footer">P0 — WeddingFlow</footer>
+  <script>
+    const form = document.getElementById('login-form');
+    const errorEl = document.getElementById('login-error');
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
+
+      const accounts = {
+        'test@leverancier.nl': { role: 'supplier' },
+        'test@bruidspaar.nl': { role: 'owner' },
+      };
+
+      if (password === 'test123' && accounts[email]) {
+        const session = {
+          isAuthenticated: true,
+          role: accounts[email].role,
+          email,
+          tokens: { accessToken: 'demo-token' },
+        };
+        localStorage.setItem('managementapp.session', JSON.stringify(session));
+        window.location.href = '/dashboard';
+        return;
+      }
+
+      errorEl.style.display = 'block';
+    });
+  </script>
+</body>
+</html>

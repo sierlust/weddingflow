@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Over ons — WeddingFlow</title>
+  <meta name="description" content="Leer meer over WeddingFlow, ons team en onze missie." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg-1:#F1F5F9;--bg-2:#E2E8F0;--card:#FFFFFF;--ink:#0F172A;--muted:#64748B;--line:#E2E8F0;--primary:#2563EB;--primary-strong:#1D4ED8;--primary-soft:#EFF6FF;--ok:#059669;--shadow:0 1px 3px rgba(15,23,42,0.08),0 4px 16px rgba(15,23,42,0.06)}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--card)}
+    .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+    .navbar-inner{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:64px}
+    .logo{font-weight:700;font-size:1.25rem;color:var(--primary);text-decoration:none;letter-spacing:-0.02em}
+    .nav-links{display:flex;gap:28px;list-style:none;padding:0}
+    .nav-links a{text-decoration:none;color:var(--ink);font-size:0.9rem;font-weight:500;transition:color 0.15s}
+    .nav-links a:hover{color:var(--primary)}
+    .nav-actions{display:flex;gap:10px;align-items:center}
+    .btn{border:0;border-radius:8px;padding:9px 18px;font:inherit;font-size:0.875rem;font-weight:600;cursor:pointer;color:#fff;background:var(--primary);text-decoration:none;transition:background 0.15s}
+    .btn:hover{background:var(--primary-strong)}
+    .btn.ghost{border:1px solid var(--line);background:var(--card);color:var(--ink)}
+    .btn.ghost:hover{background:var(--bg-1)}
+
+    .hero-section{text-align:center;padding:80px 20px 60px;background:var(--primary-soft)}
+    .hero-section h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;letter-spacing:-0.02em}
+    .hero-section p{margin-top:12px;color:var(--muted);font-size:1.1rem;max-width:600px;margin-inline:auto;line-height:1.6}
+
+    .page{max-width:900px;margin:0 auto;padding:60px 20px 80px}
+    .section{margin-bottom:56px}
+    .section h2{font-size:1.5rem;font-weight:700;margin-bottom:16px;letter-spacing:-0.02em}
+    .section p{color:var(--muted);line-height:1.7;font-size:0.95rem;margin-bottom:12px}
+
+    .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+    .value-card{border:1px solid var(--line);border-radius:12px;padding:24px 20px;text-align:center}
+    .value-icon{font-size:2rem;margin-bottom:12px}
+    .value-card h3{font-size:1rem;margin-bottom:8px}
+    .value-card p{color:var(--muted);font-size:0.85rem;line-height:1.5}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:24px}
+    .stat{text-align:center;padding:24px 12px;border:1px solid var(--line);border-radius:12px;background:var(--primary-soft)}
+    .stat-number{font-size:2rem;font-weight:700;color:var(--primary)}
+    .stat-label{color:var(--muted);font-size:0.85rem;margin-top:4px}
+
+    .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+    .team-card{border:1px solid var(--line);border-radius:12px;overflow:hidden;text-align:center}
+    .team-photo{width:100%;height:200px;object-fit:cover;background:var(--bg-2)}
+    .team-info{padding:16px}
+    .team-info h3{font-size:1rem;margin-bottom:2px}
+    .team-info p{color:var(--muted);font-size:0.85rem}
+
+    .cta-box{text-align:center;padding:48px 28px;border-radius:16px;background:var(--primary);color:#fff;margin-top:40px}
+    .cta-box h2{font-size:1.5rem;margin-bottom:10px}
+    .cta-box p{opacity:0.9;margin-bottom:20px;max-width:440px;margin-inline:auto}
+    .cta-box .btn{background:#fff;color:var(--primary)}
+    .cta-box .btn:hover{background:#f0f0f0}
+
+    .footer{background:var(--ink);color:rgba(255,255,255,0.7);padding:40px 20px;text-align:center;font-size:0.85rem;margin-top:40px}
+    .footer a{color:rgba(255,255,255,0.7);text-decoration:none;margin:0 10px}
+    .footer a:hover{color:#fff}
+
+    @media(max-width:900px){.values-grid,.team-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}.nav-links{display:none}}
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="/" class="logo">WeddingFlow</a>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/suppliers">Leveranciers</a></li>
+      <li><a href="/inspiratie">Inspiratie</a></li>
+      <li><a href="/hoe-het-werkt">Hoe het werkt</a></li>
+    <li><a href="/p0">P0</a></li><li><a href="/p1">P1</a></li><li><a href="/p2">P2</a></li><li><a href="/p3">P3</a></li></ul>
+    <div class="nav-actions">
+      <a href="/login" class="btn ghost">Inloggen</a>
+      <a href="/register" class="btn">Gratis starten</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero-section">
+  <h1>Over WeddingFlow</h1>
+  <p>Wij geloven dat het plannen van een bruiloft net zo mooi zou moeten zijn als de dag zelf. Daarom bouwen wij het platform waar bruidsparen en leveranciers naadloos samenwerken.</p>
+</section>
+
+<main class="page">
+  <section class="section">
+    <h2>Onze missie</h2>
+    <p>WeddingFlow is geboren uit frustratie: het plannen van een bruiloft kost gemiddeld 250 uur, verspreid over tientallen apps, e-mails en Excelsheets. Wij brengen alles samen op één plek — van het vinden van de perfecte leverancier tot het laatste detail van het draaiboek.</p>
+    <p>Ons platform verbindt bruidsparen met leveranciers via een unieke samenwerkingsruimte. Geen eindeloze e-mailketens meer, geen vergeten afspraken. Gewoon samen bouwen aan de perfecte dag.</p>
+  </section>
+
+  <section class="section">
+    <h2>Onze waarden</h2>
+    <div class="values-grid">
+      <div class="value-card">
+        <div class="value-icon">&#9829;</div>
+        <h3>Samenwerking centraal</h3>
+        <p>De samenwerkingsruimte is het hart van WeddingFlow. Bruidsparen en leveranciers werken samen, niet naast elkaar.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">&#9733;</div>
+        <h3>Eenvoud</h3>
+        <p>Trouwen plannen is al spannend genoeg. Onze tools zijn intuïtief en overzichtelijk — geen gedoe.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">&#9854;</div>
+        <h3>Vertrouwen</h3>
+        <p>Geverifieerde leveranciers, eerlijke reviews en transparante prijzen. Zodat jullie met een gerust hart kiezen.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>WeddingFlow in cijfers</h2>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-number">500+</div>
+        <div class="stat-label">Leveranciers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">2.000+</div>
+        <div class="stat-label">Bruidsparen</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">12</div>
+        <div class="stat-label">Categorieën</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">4.8</div>
+        <div class="stat-label">Gemiddelde score</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Het team</h2>
+    <p>Een klein team met een grote passie voor bruiloften en technologie.</p>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-photo" style="background:linear-gradient(135deg, var(--primary-soft), var(--bg-2))"></div>
+        <div class="team-info">
+          <h3>Daniel Lederks</h3>
+          <p>Oprichter &amp; Developer</p>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo" style="background:linear-gradient(135deg, var(--bg-2), var(--primary-soft))"></div>
+        <div class="team-info">
+          <h3>Team lid</h3>
+          <p>Design &amp; UX</p>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo" style="background:linear-gradient(135deg, var(--primary-soft), var(--bg-1))"></div>
+        <div class="team-info">
+          <h3>Team lid</h3>
+          <p>Marketing &amp; Partnerships</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta-box">
+    <h2>Samen aan de slag?</h2>
+    <p>Start vandaag nog met het plannen van jullie droombruiloft, of meld je aan als leverancier.</p>
+    <a href="/register" class="btn" style="padding:14px 28px;font-size:1rem;">Gratis starten</a>
+  </div>
+</main>
+
+<footer class="footer">
+  <p>&copy; 2026 WeddingFlow &middot;
+    <a href="/algemene-voorwaarden">Voorwaarden</a>
+    <a href="/privacybeleid">Privacy</a>
+    <a href="/contact">Contact</a>
+  </p>
+</footer>
+</body>
+</html>
