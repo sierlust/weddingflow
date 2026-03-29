@@ -58,7 +58,16 @@ export class CalendarController {
     static async create(req: any, res: any) {
         const { id: weddingId } = req.params;
         try {
-            const body = { visibilityScope: 'all_assigned_suppliers', ...req.body };
+            const raw = req.body || {};
+            // Accept both camelCase and snake_case field names from clients
+            const body = {
+                visibilityScope: 'all_assigned_suppliers',
+                ...raw,
+                startAt: raw.startAt ?? raw.start_at,
+                endAt: raw.endAt ?? raw.end_at,
+                locationOrLink: raw.locationOrLink ?? raw.location_or_link,
+                visibilityScope: raw.visibilityScope ?? raw.visibility_scope ?? 'all_assigned_suppliers',
+            };
             const appointment = await CalendarService.createAppointment({ weddingId, ...body });
             return res.status(201).json(CalendarController.normalizeMobileAppointment(appointment));
         } catch (err: any) {
@@ -69,7 +78,16 @@ export class CalendarController {
     static async update(req: any, res: any) {
         const { id: appointmentId } = req.params;
         try {
-            const appointment = await CalendarService.updateAppointment(appointmentId, req.body || {}, req.user?.sub);
+            const raw = req.body || {};
+            // Accept both camelCase and snake_case field names from clients
+            const patch = {
+                ...raw,
+                ...(raw.start_at !== undefined && { startAt: raw.start_at }),
+                ...(raw.end_at !== undefined && { endAt: raw.end_at }),
+                ...(raw.location_or_link !== undefined && { locationOrLink: raw.location_or_link }),
+                ...(raw.visibility_scope !== undefined && { visibilityScope: raw.visibility_scope }),
+            };
+            const appointment = await CalendarService.updateAppointment(appointmentId, patch, req.user?.sub);
             return res.json(CalendarController.normalizeMobileAppointment(appointment));
         } catch (err: any) {
             const status = err.message?.toLowerCase().includes('not found') ? 404 : 400;

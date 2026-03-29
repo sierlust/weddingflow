@@ -1,3 +1,5 @@
+import * as BudgetRepo from '../repositories/budget.repo';
+
 export interface BudgetEntry {
     id: string;
     weddingId: string;
@@ -9,12 +11,8 @@ export interface BudgetEntry {
 }
 
 export class BudgetService {
-    private static entries: Map<string, BudgetEntry> = new Map();
-
     static async getEntries(weddingId: string): Promise<BudgetEntry[]> {
-        return Array.from(this.entries.values())
-            .filter(e => e.weddingId === weddingId)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return BudgetRepo.findEntriesByWedding(weddingId);
     }
 
     static async addEntry(weddingId: string, data: {
@@ -36,16 +34,15 @@ export class BudgetService {
             category: data.category?.trim() || '',
             createdAt: new Date().toISOString(),
         };
-        this.entries.set(id, entry);
-        return entry;
+        return BudgetRepo.createEntry(entry);
     }
 
     static async deleteEntry(entryId: string): Promise<void> {
-        if (!this.entries.has(entryId)) throw Object.assign(new Error('Boeking niet gevonden'), { status: 404 });
-        this.entries.delete(entryId);
+        const removed = await BudgetRepo.removeEntry(entryId);
+        if (!removed) throw Object.assign(new Error('Boeking niet gevonden'), { status: 404 });
     }
 
     static clearStateForTests(): void {
-        this.entries.clear();
+        BudgetRepo._clearBudgetStoreForTests();
     }
 }

@@ -1,6 +1,9 @@
 import crypto from 'crypto';
 import { RealtimeService } from './realtime.service';
 import { AuditService } from './audit.service';
+import * as ChatRepo from '../repositories/chat.repo';
+import * as DocumentsRepo from '../repositories/documents.repo';
+import * as AppointmentsRepo from '../repositories/appointments.repo';
 
 /**
  * Phase 4.1 Chat Module logic
@@ -13,21 +16,11 @@ export class ChatService {
         REPLY: 'reply',
     } as const;
 
-    private static threads: Map<string, { id: string; weddingId: string; type: 'supplier_thread' | 'couple_internal' | 'all_suppliers'; createdAt: Date }> = new Map();
-    private static threadParticipants: Map<string, Set<string>> = new Map();
-    private static messages: Map<
-        string,
-        {
-            id: string;
-            threadId: string;
-            senderId: string;
-            content: string;
-            createdAt: Date;
-            replyToMessageId?: string;
-            metadata?: Record<string, unknown>;
-        }[]
-    > = new Map();
-    private static pinnedByWedding: Map<string, Set<string>> = new Map();
+    // Storage delegated to chat.repo — accessed via sync Map accessors.
+    private static get threads() { return ChatRepo.getThreadsMap(); }
+    private static get threadParticipants() { return ChatRepo.getThreadParticipantsMap(); }
+    private static get messages() { return ChatRepo.getMessagesMap(); }
+    private static get pinnedByWedding() { return ChatRepo.getPinnedByWeddingMap(); }
 
     private static ensureThread(threadId: string) {
         if (!this.threadParticipants.has(threadId)) {
@@ -39,10 +32,7 @@ export class ChatService {
     }
 
     static clearStateForTests() {
-        this.threads.clear();
-        this.threadParticipants.clear();
-        this.messages.clear();
-        this.pinnedByWedding.clear();
+        ChatRepo._clearChatStoreForTests();
     }
 
     static canUserAccessThread(threadId: string, userId: string, role?: string): boolean {
@@ -303,10 +293,11 @@ export class ChatService {
  * Phase 4.2 Document Library logic
  */
 export class DocumentService {
-    private static documents: Map<string, any> = new Map();
+    // Storage delegated to documents.repo — accessed via sync Map accessor.
+    private static get documents() { return DocumentsRepo.getDocumentsMap(); }
 
     static clearStateForTests() {
-        this.documents.clear();
+        DocumentsRepo._clearDocumentsStoreForTests();
     }
 
     /**
@@ -469,32 +460,10 @@ export class DocumentService {
  * Phase 4.4 Calendar & iCal Feed logic
  */
 export class CalendarService {
-    private static appointments: Map<string, {
-        id: string;
-        weddingId: string;
-        title: string;
-        startAt: Date;
-        endAt: Date;
-        timezone: string;
-        locationOrLink: string | null;
-        notes: { value: string; scope: 'couple_only' | 'all_assigned_suppliers' | 'selected_suppliers' };
-        attachments: string[];
-        reminderSettings: { minutesBefore: number; channel: 'email' | 'push' }[];
-        visibilityScope: 'couple_only' | 'all_assigned_suppliers' | 'selected_suppliers';
-        participants: { userId?: string; supplierOrgId?: string }[];
-        createdAt: Date;
-    }> = new Map();
-
-    private static subscriptionsByKey: Map<string, string> = new Map();
-    private static subscriptionsByToken: Map<string, {
-        token: string;
-        weddingId: string;
-        userId: string;
-        supplierOrgIds: string[];
-        isOwner: boolean;
-        isPlatformAdmin: boolean;
-        revokedAt: Date | null;
-    }> = new Map();
+    // Storage delegated to appointments.repo — accessed via sync Map accessors.
+    private static get appointments() { return AppointmentsRepo.getAppointmentsMap(); }
+    private static get subscriptionsByKey() { return AppointmentsRepo.getSubscriptionsByKeyMap(); }
+    private static get subscriptionsByToken() { return AppointmentsRepo.getSubscriptionsByTokenMap(); }
 
     /**
      * 4.4.1 Get appointments with visibility filtering
@@ -848,9 +817,7 @@ export class CalendarService {
     }
 
     static clearStateForTests() {
-        this.appointments.clear();
-        this.subscriptionsByKey.clear();
-        this.subscriptionsByToken.clear();
+        AppointmentsRepo._clearAppointmentsStoreForTests();
     }
 
     private static normalizeContext(context: {

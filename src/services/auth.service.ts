@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import * as UsersRepo from '../repositories/users.repo';
 
 type RateLimitKind = 'login' | 'refresh' | 'register';
 type ProviderType = 'email_password' | 'oidc_google' | 'oidc_microsoft';
@@ -10,12 +11,6 @@ type UserRecord = {
     name: string;
     locale: string;
     createdAt: Date;
-};
-
-type RefreshSession = {
-    userId: string;
-    orgClaims: string[];
-    expiresAt: Date;
 };
 
 type AccessTokenClaims = {
@@ -34,14 +29,7 @@ export class AuthService {
     private static readonly JWT_ISSUER = process.env.JWT_ISSUER || 'managementapp-local';
     private static readonly JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'managementapp-api';
 
-    // 1.3.3 Refresh Token Rotation Store
-    private static refreshTokens: Map<string, RefreshSession> = new Map();
-
-    // Minimal in-memory identity store to support 1.4.3/1.4.4 locally.
-    private static users: Map<string, UserRecord> = new Map();
-    private static identityProviders: Map<string, string> = new Map();
-
-    // 1.3.6 Sliding-window rate limiter state
+    // 1.3.6 Sliding-window rate limiter state — kept in service (transient, not domain data)
     private static rateWindows: Map<string, number[]> = new Map();
     private static readonly RATE_LIMITS: Record<RateLimitKind, { max: number; windowMs: number }> = {
         login: { max: 10, windowMs: 60_000 },
@@ -51,20 +39,26 @@ export class AuthService {
 
     private static initialized = false;
 
-    private static ensureInitialized(): void {
+    private static async ensureInitialized(): Promise<void> {
         if (this.initialized) {
             return;
         }
         this.initialized = true;
         const demoUserId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-        this.users.set(demoUserId, {
-            id: demoUserId,
-            email: 'couple@example.com',
-            name: 'Sarah & Tom',
-            locale: 'nl',
-            createdAt: new Date(),
-        });
-        this.identityProviders.set(this.getIdentityKey('email_password', 'couple@example.com'), demoUserId);
+        const identityKey = this.getIdentityKey('email_password', 'couple@example.com');
+        const existing = await UsersRepo.findUserById(demoUserId);
+        if (!existing) {
+            await UsersRepo.createUser(
+                {
+                    id: demoUserId,
+                    email: 'couple@example.com',
+                    name: 'Sarah & Tom',
+                    locale: 'nl',
+                    createdAt: new Date(),
+                },
+                identityKey
+            );
+        }
     }
 
     private static getIdentityKey(providerType: ProviderType | string, providerSubject: string): string {
@@ -75,7 +69,7 @@ export class AuthService {
      * 1.3.2 Generate and Sign JWT
      */
     static async generateTokens(userId: string, orgClaims: string[]) {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         const accessToken = jwt.sign(
             {
                 sub: userId,
@@ -92,10 +86,10 @@ export class AuthService {
         const refreshToken = crypto.randomBytes(32).toString('hex');
 
         // 1.3.7 Refresh token rotation storage.
-        this.refreshTokens.set(refreshToken, {
+        await UsersRepo.addRefreshToken(refreshToken, {
             userId,
             orgClaims,
-            expiresAt: new Date(Date.now() + this.REFRESH_TTL_MS)
+            expiresAt: new Date(Date.now() + this.REFRESH_TTL_MS),
         });
 
         return { accessToken, refreshToken, expiresIn: '15m' };
@@ -146,15 +140,15 @@ export class AuthService {
      * 1.3.3 Refresh Logic
      */
     static async refresh(oldRefreshToken: string) {
-        this.ensureInitialized();
-        const session = this.refreshTokens.get(oldRefreshToken);
+        await this.ensureInitialized();
+        const session = await UsersRepo.getRefreshSession(oldRefreshToken);
         if (!session || session.expiresAt < new Date()) {
-            this.refreshTokens.delete(oldRefreshToken);
+            await UsersRepo.removeRefreshToken(oldRefreshToken);
             throw new Error('Invalid or expired refresh token');
         }
 
         // 1.3.7 Refresh token rotation: revoke old, issue new.
-        this.refreshTokens.delete(oldRefreshToken);
+        await UsersRepo.removeRefreshToken(oldRefreshToken);
         return this.generateTokens(session.userId, session.orgClaims);
     }
 
@@ -162,7 +156,7 @@ export class AuthService {
      * 1.3.4 Logout (Revocation)
      */
     static async logout(refreshToken: string) {
-        this.refreshTokens.delete(refreshToken);
+        await UsersRepo.removeRefreshToken(refreshToken);
         return { success: true };
     }
 
@@ -189,7 +183,7 @@ export class AuthService {
     static getUserFromToken(token: string) {
         try {
             const claims = jwt.verify(token, this.JWT_SECRET) as AccessTokenClaims;
-            const user = this.users.get(claims.sub);
+            const user = UsersRepo.findUserByIdSync(claims.sub);
             if (!user) return null;
             return { id: user.id, email: user.email, name: user.name, role: 'couple' };
         } catch {
@@ -197,54 +191,55 @@ export class AuthService {
         }
     }
 
+    // Keep sync signature for backward compatibility with server.ts call site (no await).
+    static getUserById(id: string): UserRecord | null {
+        return UsersRepo.findUserByIdSync(id);
+    }
+
     /**
      * 1.4.3 Resolve user via identity provider lookup
      */
     static async resolveUserByProvider(providerType: string, providerSubject: string) {
-        this.ensureInitialized();
-        const key = this.getIdentityKey(providerType, providerSubject);
-        return this.identityProviders.get(key) || null;
+        await this.ensureInitialized();
+        return UsersRepo.findUserByProvider(providerType, providerSubject);
     }
 
     /**
      * 1.4.4 Register user with identity provider row
      */
     static async registerUserWithIdentity(email: string, name: string, providerType: string, providerSubject: string) {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         const normalizedEmail = email.toLowerCase();
         const identityKey = this.getIdentityKey(providerType, providerSubject);
-        if (this.identityProviders.has(identityKey)) {
-            return this.identityProviders.get(identityKey)!;
+        const existingId = await UsersRepo.findUserByProvider(providerType, providerSubject);
+        if (existingId) {
+            return existingId;
         }
         const newUserId = crypto.randomUUID();
-        this.users.set(newUserId, {
-            id: newUserId,
-            email: normalizedEmail,
-            name,
-            locale: 'nl',
-            createdAt: new Date(),
-        });
-        this.identityProviders.set(identityKey, newUserId);
-        this.identityProviders.set(this.getIdentityKey('email_password', normalizedEmail), newUserId);
+        const emailIdentityKey = this.getIdentityKey('email_password', normalizedEmail);
+        await UsersRepo.createUser(
+            {
+                id: newUserId,
+                email: normalizedEmail,
+                name,
+                locale: 'nl',
+                createdAt: new Date(),
+            },
+            identityKey,
+            [emailIdentityKey]
+        );
         return newUserId;
     }
 
     static async rollbackUserRegistration(userId: string) {
-        this.users.delete(userId);
-        for (const [identityKey, mappedUserId] of Array.from(this.identityProviders.entries())) {
-            if (mappedUserId === userId) {
-                this.identityProviders.delete(identityKey);
-            }
-        }
+        await UsersRepo.removeUserAndIdentities(userId);
     }
 
     static clearStateForTests() {
-        this.refreshTokens.clear();
+        UsersRepo._clearUsersStoreForTests();
         this.rateWindows.clear();
-        this.users.clear();
-        this.identityProviders.clear();
         this.initialized = false;
-        this.ensureInitialized();
+        // Re-seed the demo user synchronously by resetting initialized so ensureInitialized runs on next call
     }
 
     static getJwtConfigForTests() {

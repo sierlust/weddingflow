@@ -131,6 +131,8 @@ type UpdateWeddingInput = {
   categoryData?: Record<string, string>;
 };
 
+import * as WeddingsRepo from '../repositories/weddings.repo';
+
 const defaultData: DashboardData = {
   weddings: [
     {
@@ -216,14 +218,32 @@ function cloneData<T>(value: T): T {
 }
 
 export class DashboardService {
+  // DashboardService manages its OWN copy of data (cloned, isolated from the repo)
+  // to preserve test isolation. Mutations (createWedding, updateWedding,
+  // ensureSupplierWeddingAssignment) additionally sync to the repo so that other
+  // services and the repo's async API stay consistent.
   private static data: DashboardData = cloneData(defaultData);
 
   static setDataForTests(data: DashboardData) {
     this.data = cloneData(data);
+    // Also sync to the repo so findWeddingById etc. return test data.
+    WeddingsRepo._setWeddingsDataForTests(
+      data.weddings as any[],
+      data.assignments as any[],
+      data.staffAssignments,
+      data.users
+    );
   }
 
   static resetDataForTests() {
     this.data = cloneData(defaultData);
+    // Sync to repo.
+    WeddingsRepo._setWeddingsDataForTests(
+      defaultData.weddings as any[],
+      defaultData.assignments as any[],
+      defaultData.staffAssignments,
+      defaultData.users
+    );
   }
 
   static getWeddingSummaryById(weddingId: string) {
@@ -257,6 +277,32 @@ export class DashboardService {
     };
   }
 
+  static isUserAssignedToWedding(userId: string, weddingId: string): boolean {
+    return this.data.staffAssignments.some(
+      (sa) => sa.userId === userId && sa.weddingId === weddingId
+    );
+  }
+
+  static getWeddingMembers(weddingId: string) {
+    const assignments = this.data.assignments.filter(
+      (a) => a.weddingId === weddingId && a.status === 'active'
+    );
+    const staffAssignments = this.data.staffAssignments.filter(
+      (sa) => sa.weddingId === weddingId
+    );
+    return {
+      assignments: assignments.map(a => ({
+        supplierOrgId: a.supplierOrgId,
+        category: a.category,
+        status: a.status,
+      })),
+      staff: staffAssignments.map(sa => ({
+        userId: sa.userId,
+        supplierOrgId: sa.supplierOrgId,
+      })),
+    };
+  }
+
   static ensureSupplierWeddingAssignment(input: {
     weddingId: string;
     supplierOrgId: string;
@@ -283,6 +329,7 @@ export class DashboardService {
         coupleNames: [],
       };
       this.data.weddings.push(wedding);
+      WeddingsRepo.insertWeddingSync({ ...wedding });
     }
 
     const existingAssignment = this.data.assignments.find(
@@ -293,31 +340,26 @@ export class DashboardService {
       if (!existingAssignment.category) {
         existingAssignment.category = category;
       }
+      WeddingsRepo.insertAssignmentSync({ ...existingAssignment });
     } else {
-      this.data.assignments.push({
-        weddingId,
-        supplierOrgId,
-        status: 'active',
-        category,
-      });
+      const newAssignment = { weddingId, supplierOrgId, status: 'active' as const, category };
+      this.data.assignments.push(newAssignment);
+      WeddingsRepo.insertAssignmentSync(newAssignment);
     }
 
     const hasStaffAssignment = this.data.staffAssignments.some(
       (entry) => entry.weddingId === weddingId && entry.supplierOrgId === supplierOrgId && entry.userId === userId
     );
     if (!hasStaffAssignment) {
-      this.data.staffAssignments.push({
-        weddingId,
-        supplierOrgId,
-        userId,
-      });
+      const newStaff = { weddingId, supplierOrgId, userId };
+      this.data.staffAssignments.push(newStaff);
+      WeddingsRepo.insertStaffAssignmentSync(newStaff);
     }
 
     if (!this.data.users.some((user) => user.id === userId)) {
-      this.data.users.push({
-        id: userId,
-        name: `User ${userId.slice(0, 8)}`,
-      });
+      const newUser = { id: userId, name: `User ${userId.slice(0, 8)}` };
+      this.data.users.push(newUser);
+      WeddingsRepo.insertDashboardUserSync(newUser);
     }
 
     return { ok: true, weddingId, supplierOrgId, userId };
@@ -366,25 +408,25 @@ export class DashboardService {
       created_by_user_id: createdByUserId,
     };
     this.data.weddings.push(wedding);
+    WeddingsRepo.insertWeddingSync({ ...wedding });
 
-    this.data.assignments.push({
+    const newAssignment = {
       weddingId,
       supplierOrgId,
-      status: 'active',
+      status: 'active' as const,
       category: String(input.supplierCategory || 'General'),
-    });
+    };
+    this.data.assignments.push(newAssignment);
+    WeddingsRepo.insertAssignmentSync(newAssignment);
 
-    this.data.staffAssignments.push({
-      weddingId,
-      supplierOrgId,
-      userId: createdByUserId,
-    });
+    const newStaff = { weddingId, supplierOrgId, userId: createdByUserId };
+    this.data.staffAssignments.push(newStaff);
+    WeddingsRepo.insertStaffAssignmentSync(newStaff);
 
     if (!this.data.users.some((user) => user.id === createdByUserId)) {
-      this.data.users.push({
-        id: createdByUserId,
-        name: `User ${createdByUserId.slice(0, 8)}`,
-      });
+      const newUser = { id: createdByUserId, name: `User ${createdByUserId.slice(0, 8)}` };
+      this.data.users.push(newUser);
+      WeddingsRepo.insertDashboardUserSync(newUser);
     }
 
     return {
@@ -453,6 +495,9 @@ export class DashboardService {
     if (typeof input.status === 'string' && validStatuses.includes(input.status as WeddingStatus)) {
       wedding.status = input.status as WeddingStatus;
     }
+
+    // Sync updated wedding to the repo (fire-and-forget — repo is async-ready).
+    WeddingsRepo.insertWeddingSync({ ...wedding });
 
     return {
       wedding: {

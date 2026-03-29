@@ -47,6 +47,8 @@ import { RealtimeService } from './services/realtime.service';
 import { EntitlementService } from './services/entitlement.service';
 import { RuntimePersistenceService } from './services/runtime-persistence.service';
 import { SupplierDirectoryService } from './services/supplier-directory.service';
+import { AuthService } from './services/auth.service';
+import { DashboardService } from './services/dashboard.service';
 
 // Validate required secrets are set in non-development environments
 const isDev = process.env.NODE_ENV !== 'production';
@@ -271,19 +273,22 @@ app.patch('/v1/suppliers/profile', wrap(SupplierController.upsertOwnProfile));
 app.get('/v1/suppliers/:id', wrap(SupplierController.getById));
 
 app.post('/v1/weddings/:id/suppliers/invite', wrap(async (req: any, res: any) => {
-  const role = String(req.user?.role || '').toLowerCase();
   const isPlatformAdmin = Boolean(req.user?.is_platform_admin);
-  if (role !== 'owner' && !isPlatformAdmin) {
-    return res.status(403).json({ error: 'Forbidden: alleen bruidspaar kan leveranciers uitnodigen.' });
-  }
   const { id: wedding_id } = req.params;
+  // Check user is assigned to this wedding
+  const isAssigned = DashboardService.isUserAssignedToWedding(req.user.sub, wedding_id);
+  if (!isAssigned && !isPlatformAdmin) {
+    return res.status(403).json({ error: 'Je bent niet toegewezen aan deze bruiloft.' });
+  }
   const { email, type, supplier_org_id } = req.body ?? {};
   const emailStr = typeof email === 'string' ? email.trim() : '';
   if (!emailStr || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr) || emailStr.length > 254) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
+  const allowedTypes = ['wedding_supplier_invite', 'couple_invite', 'supplier_invite', 'supplier_to_supplier_invite'];
+  const inviteType = type && allowedTypes.includes(type) ? type : 'wedding_supplier_invite';
   const issuer_id = req.user?.sub || req.body.issuer_id;
-  const result = await createInvitation(emailStr, wedding_id, type || 'wedding_supplier_invite', issuer_id, supplier_org_id);
+  const result = await createInvitation(emailStr, wedding_id, inviteType, issuer_id, supplier_org_id);
   res.status(201).json(result);
 }));
 app.get('/v1/weddings/:id/invitations', wrap(async (req: any, res: any) => {
@@ -363,6 +368,19 @@ app.post('/v1/invitations/revoke', wrap(async (req: any, res: any) => {
 app.post('/v1/internal/jobs/expire-invitations', wrap(async (_req: any, res: any) => {
   const result = InvitationService.expirePendingInvitations();
   res.json(result);
+}));
+app.get('/v1/invitations/mine', wrap(async (req: any, res: any) => {
+  const userId = req.user?.sub;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const user = AuthService.getUserById(userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const result = await listPendingInvitationsForEmail(user.email);
+  res.json({ invitations: result });
+}));
+app.get('/v1/weddings/:id/members', wrap(async (req: any, res: any) => {
+  const { id: weddingId } = req.params;
+  const members = DashboardService.getWeddingMembers(weddingId);
+  res.json({ members });
 }));
 
 app.get('/v1/weddings', wrap(async (req: any, res: any) => {

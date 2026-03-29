@@ -1,4 +1,5 @@
 import { AuditService } from './audit.service';
+import * as RosRepo from '../repositories/ros.repo';
 
 type RosItemType = 'ceremony' | 'reception' | 'dinner' | 'party' | 'logistics' | 'other';
 type VisibilityScope = 'all_published' | 'selected_suppliers' | 'couple_only';
@@ -109,11 +110,12 @@ function statusPriority(status: ChangeRequestStatus): number {
  * Phase 5.1 / 5.3 / 5.4 Run-of-Show Service
  */
 export class ROSService {
-  private static runSheetsByWedding = new Map<string, RunSheet>();
-  private static runSheetItemsByWedding = new Map<string, Map<string, RunSheetItem>>();
-  private static runSheetVersionsByWedding = new Map<string, RunSheetVersion[]>();
-  private static acknowledgements = new Map<string, RunSheetAcknowledgement>();
-  private static changeRequests = new Map<string, RunSheetChangeRequest>();
+  // Storage delegated to ros.repo — accessed via sync Map accessors.
+  private static get runSheetsByWedding() { return RosRepo.getRunSheetsByWeddingMap(); }
+  private static get runSheetItemsByWedding() { return RosRepo.getRunSheetItemsByWeddingMap(); }
+  private static get runSheetVersionsByWedding() { return RosRepo.getRunSheetVersionsByWeddingMap(); }
+  private static get acknowledgements() { return RosRepo.getAcknowledgementsMap(); }
+  private static get changeRequests() { return RosRepo.getChangeRequestsMap(); }
 
   private static readonly allowedItemTypes = new Set<RosItemType>([
     'ceremony',
@@ -474,11 +476,7 @@ export class ROSService {
   }
 
   static clearStateForTests() {
-    this.runSheetsByWedding.clear();
-    this.runSheetItemsByWedding.clear();
-    this.runSheetVersionsByWedding.clear();
-    this.acknowledgements.clear();
-    this.changeRequests.clear();
+    RosRepo._clearRosStoreForTests();
   }
 
   private static normalizeDraftItems(weddingId: string, rawItems: any[]): RunSheetItem[] {

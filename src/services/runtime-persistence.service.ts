@@ -4,6 +4,11 @@ import { BillingService } from './billing.service';
 import { CalendarService, ChatService, DocumentService } from './collaboration.service';
 import { DashboardService } from './dashboard.service';
 import { InvitationService } from './invitation.service';
+import * as InvitationsRepo from '../repositories/invitations.repo';
+import * as ChatRepo from '../repositories/chat.repo';
+import * as DocumentsRepo from '../repositories/documents.repo';
+import * as AppointmentsRepo from '../repositories/appointments.repo';
+import * as RosRepo from '../repositories/ros.repo';
 import { MailService } from './mail.service';
 import { NotificationService } from './notification.service';
 import { ROSService } from './ros.service';
@@ -292,6 +297,15 @@ export class RuntimePersistenceService {
       return;
     }
 
+    // Helper: populate a Map from either a Map or a plain object (after JSON round-trip)
+    function restoreMap(target: Map<string, any>, src: any): void {
+      if (!src) return;
+      const entries: [string, any][] = src instanceof Map
+        ? Array.from(src.entries())
+        : Object.entries(src);
+      entries.forEach(([k, v]) => target.set(k, v));
+    }
+
     if (state.dashboard?.data) {
       asAny(DashboardService).data = state.dashboard.data;
     }
@@ -305,27 +319,100 @@ export class RuntimePersistenceService {
     }
 
     if (state.invitation) {
-      if (state.invitation.invitations) asAny(InvitationService).invitations = state.invitation.invitations;
-      if (state.invitation.checklist) asAny(InvitationService).checklist = state.invitation.checklist;
+      // InvitationService.invitations / checklist / checklistShown are getter-only
+      // properties that delegate to InvitationsRepo. Restore data directly into the
+      // underlying repo Maps/Set so the getter still works after a restart.
+      if (state.invitation.invitations) {
+        const map = InvitationsRepo.getInvitationsMap();
+        map.clear();
+        const src = state.invitation.invitations;
+        if (src instanceof Map) {
+          src.forEach((v: any, k: string) => map.set(k, v));
+        } else if (src && typeof src === 'object') {
+          Object.entries(src).forEach(([k, v]) => map.set(k, v as any));
+        }
+      }
+      if (state.invitation.checklist) {
+        const map = InvitationsRepo.getChecklistMap();
+        map.clear();
+        const src = state.invitation.checklist;
+        if (src instanceof Map) {
+          src.forEach((v: any, k: string) => map.set(k, v instanceof Map ? v : new Map(Object.entries(v || {}))));
+        } else if (src && typeof src === 'object') {
+          Object.entries(src).forEach(([k, v]) => map.set(k, v instanceof Map ? v : new Map(Object.entries(v as any || {}))));
+        }
+      }
       if (state.invitation.assignments) asAny(InvitationService).assignments = state.invitation.assignments;
-      if (state.invitation.checklistShown) asAny(InvitationService).checklistShown = state.invitation.checklistShown;
+      if (state.invitation.checklistShown) {
+        const set = InvitationsRepo.getChecklistShownSet();
+        set.clear();
+        const src = state.invitation.checklistShown;
+        if (src instanceof Set) {
+          src.forEach((v: string) => set.add(v));
+        } else if (Array.isArray(src)) {
+          src.forEach((v: string) => set.add(v));
+        }
+      }
     }
 
     if (state.chat) {
-      if (state.chat.threads) asAny(ChatService).threads = state.chat.threads;
-      if (state.chat.threadParticipants) asAny(ChatService).threadParticipants = state.chat.threadParticipants;
-      if (state.chat.messages) asAny(ChatService).messages = state.chat.messages;
-      if (state.chat.pinnedByWedding) asAny(ChatService).pinnedByWedding = state.chat.pinnedByWedding;
+      // ChatService.threads / threadParticipants / messages / pinnedByWedding are
+      // getter-only properties delegating to ChatRepo. Restore into the repo Maps.
+      if (state.chat.threads) {
+        const map = ChatRepo.getThreadsMap();
+        map.clear();
+        restoreMap(map, state.chat.threads);
+      }
+      if (state.chat.threadParticipants) {
+        const map = ChatRepo.getThreadParticipantsMap();
+        map.clear();
+        const src = state.chat.threadParticipants;
+        const entries = src instanceof Map ? Array.from(src.entries()) : Object.entries(src || {});
+        entries.forEach(([k, v]: [string, any]) => {
+          map.set(k, v instanceof Set ? v : new Set(Array.isArray(v) ? v : Object.keys(v || {})));
+        });
+      }
+      if (state.chat.messages) {
+        const map = ChatRepo.getMessagesMap();
+        map.clear();
+        restoreMap(map, state.chat.messages);
+      }
+      if (state.chat.pinnedByWedding) {
+        const map = ChatRepo.getPinnedByWeddingMap();
+        map.clear();
+        const src = state.chat.pinnedByWedding;
+        const entries = src instanceof Map ? Array.from(src.entries()) : Object.entries(src || {});
+        entries.forEach(([k, v]: [string, any]) => {
+          map.set(k, v instanceof Set ? v : new Set(Array.isArray(v) ? v : Object.keys(v || {})));
+        });
+      }
     }
 
     if (state.documents?.documents) {
-      asAny(DocumentService).documents = state.documents.documents;
+      // DocumentService.documents is getter-only — restore into DocumentsRepo
+      const map = DocumentsRepo.getDocumentsMap();
+      map.clear();
+      restoreMap(map, state.documents.documents);
     }
 
     if (state.calendar) {
-      if (state.calendar.appointments) asAny(CalendarService).appointments = state.calendar.appointments;
-      if (state.calendar.subscriptionsByKey) asAny(CalendarService).subscriptionsByKey = state.calendar.subscriptionsByKey;
-      if (state.calendar.subscriptionsByToken) asAny(CalendarService).subscriptionsByToken = state.calendar.subscriptionsByToken;
+      // CalendarService.appointments / subscriptionsByKey / subscriptionsByToken
+      // are getter-only — restore into AppointmentsRepo.
+      if (state.calendar.appointments) {
+        const map = AppointmentsRepo.getAppointmentsMap();
+        map.clear();
+        restoreMap(map, state.calendar.appointments);
+      }
+      if (state.calendar.subscriptionsByKey) {
+        const map = AppointmentsRepo.getSubscriptionsByKeyMap();
+        map.clear();
+        restoreMap(map, state.calendar.subscriptionsByKey);
+      }
+      if (state.calendar.subscriptionsByToken) {
+        const map = AppointmentsRepo.getSubscriptionsByTokenMap();
+        map.clear();
+        restoreMap(map, state.calendar.subscriptionsByToken);
+      }
     }
 
     if (state.notification) {
@@ -343,11 +430,38 @@ export class RuntimePersistenceService {
     }
 
     if (state.ros) {
-      if (state.ros.runSheetsByWedding) asAny(ROSService).runSheetsByWedding = state.ros.runSheetsByWedding;
-      if (state.ros.runSheetItemsByWedding) asAny(ROSService).runSheetItemsByWedding = state.ros.runSheetItemsByWedding;
-      if (state.ros.runSheetVersionsByWedding) asAny(ROSService).runSheetVersionsByWedding = state.ros.runSheetVersionsByWedding;
-      if (state.ros.acknowledgements) asAny(ROSService).acknowledgements = state.ros.acknowledgements;
-      if (state.ros.changeRequests) asAny(ROSService).changeRequests = state.ros.changeRequests;
+      // ROSService properties are getter-only delegating to RosRepo — restore into repo Maps.
+      if (state.ros.runSheetsByWedding) {
+        const map = RosRepo.getRunSheetsByWeddingMap();
+        map.clear();
+        restoreMap(map, state.ros.runSheetsByWedding);
+      }
+      if (state.ros.runSheetItemsByWedding) {
+        const map = RosRepo.getRunSheetItemsByWeddingMap();
+        map.clear();
+        const src = state.ros.runSheetItemsByWedding;
+        const entries: [string, any][] = src instanceof Map ? Array.from(src.entries()) : Object.entries(src || {});
+        entries.forEach(([k, v]) => {
+          const inner = new Map<string, any>();
+          restoreMap(inner, v);
+          map.set(k, inner);
+        });
+      }
+      if (state.ros.runSheetVersionsByWedding) {
+        const map = RosRepo.getRunSheetVersionsByWeddingMap();
+        map.clear();
+        restoreMap(map, state.ros.runSheetVersionsByWedding);
+      }
+      if (state.ros.acknowledgements) {
+        const map = RosRepo.getAcknowledgementsMap();
+        map.clear();
+        restoreMap(map, state.ros.acknowledgements);
+      }
+      if (state.ros.changeRequests) {
+        const map = RosRepo.getChangeRequestsMap();
+        map.clear();
+        restoreMap(map, state.ros.changeRequests);
+      }
     }
 
     if (state.upload) {

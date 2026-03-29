@@ -1,3 +1,5 @@
+import * as GuestsRepo from '../repositories/guests.repo';
+
 export interface Guest {
     id: string;
     weddingId: string;
@@ -12,12 +14,8 @@ export interface Guest {
 }
 
 export class GuestService {
-    private static guests: Map<string, Guest> = new Map();
-
     static async getGuests(weddingId: string): Promise<Guest[]> {
-        return Array.from(this.guests.values())
-            .filter(g => g.weddingId === weddingId)
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        return GuestsRepo.findGuestsByWedding(weddingId);
     }
 
     static async addGuest(weddingId: string, data: {
@@ -40,8 +38,7 @@ export class GuestService {
             rsvpToken: `rsvp-${Math.random().toString(36).slice(2, 10)}`,
             createdAt: new Date().toISOString(),
         };
-        this.guests.set(id, guest);
-        return guest;
+        return GuestsRepo.createGuest(guest);
     }
 
     static async updateGuest(guestId: string, patch: {
@@ -51,11 +48,10 @@ export class GuestService {
         address?: string;
         plusOnes?: number;
     }): Promise<Guest> {
-        const guest = this.guests.get(guestId);
+        const guest = await GuestsRepo.findGuestById(guestId);
         if (!guest) throw Object.assign(new Error('Gast niet gevonden'), { status: 404 });
         const statusChanged = patch.status !== undefined && patch.status !== guest.status;
-        const updated: Guest = {
-            ...guest,
+        const updatedPatch: Partial<Guest> = {
             ...(patch.status !== undefined ? { status: patch.status } : {}),
             ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
             ...(patch.email !== undefined ? { email: patch.email.trim().toLowerCase() } : {}),
@@ -63,16 +59,16 @@ export class GuestService {
             ...(patch.plusOnes !== undefined ? { plusOnes: Math.max(0, Number(patch.plusOnes) || 0) } : {}),
             ...(statusChanged ? { respondedAt: new Date().toISOString() } : {}),
         };
-        this.guests.set(guestId, updated);
-        return updated;
+        const updated = await GuestsRepo.updateGuest(guestId, updatedPatch);
+        return updated!;
     }
 
     static async deleteGuest(guestId: string): Promise<void> {
-        if (!this.guests.has(guestId)) throw Object.assign(new Error('Gast niet gevonden'), { status: 404 });
-        this.guests.delete(guestId);
+        const removed = await GuestsRepo.removeGuest(guestId);
+        if (!removed) throw Object.assign(new Error('Gast niet gevonden'), { status: 404 });
     }
 
     static clearStateForTests(): void {
-        this.guests.clear();
+        GuestsRepo._clearGuestsStoreForTests();
     }
 }

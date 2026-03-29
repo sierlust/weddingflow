@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import * as SupplierRepo from '../repositories/supplier.repo';
 
 export type SupplierBudgetTier = '€' | '€€' | '€€€' | '€€€€' | '€€€€€';
 
@@ -292,7 +293,8 @@ export class SupplierDirectoryService {
   private static initialized = false;
   private static pool: Pool | null = null;
   private static dbEnabled = false;
-  private static inMemory = new Map<string, SupplierRecord>();
+  // In-memory catalog is now stored in supplier.repo — accessed via sync Map accessor.
+  private static get inMemory() { return SupplierRepo.getInMemoryMap(); }
 
   static async init(): Promise<void> {
     if (this.initialized) {
@@ -397,7 +399,7 @@ export class SupplierDirectoryService {
   static async resetForTests(): Promise<void> {
     await this.close();
     this.initialized = false;
-    this.inMemory.clear();
+    SupplierRepo._clearSupplierStoreForTests();
   }
 
   static async list(filters: SupplierFilters = {}): Promise<SupplierRecord[]> {

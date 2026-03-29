@@ -1,3 +1,5 @@
+import * as TasksRepo from '../repositories/tasks.repo';
+
 export interface Task {
     id: string;
     weddingId: string;
@@ -13,12 +15,8 @@ export interface Task {
 }
 
 export class TaskService {
-    private static tasks: Map<string, Task> = new Map();
-
     static async getTasks(weddingId: string): Promise<Task[]> {
-        return Array.from(this.tasks.values())
-            .filter(t => t.weddingId === weddingId)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return TasksRepo.findTasksByWedding(weddingId);
     }
 
     static async addTask(weddingId: string, data: {
@@ -45,8 +43,7 @@ export class TaskService {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
-        this.tasks.set(id, task);
-        return task;
+        return TasksRepo.createTask(task);
     }
 
     static async updateTask(taskId: string, patch: {
@@ -56,11 +53,10 @@ export class TaskService {
         priority?: string;
         assignedSupplierOrgId?: string;
     }): Promise<Task> {
-        const task = this.tasks.get(taskId);
+        const task = await TasksRepo.findTaskById(taskId);
         if (!task) throw Object.assign(new Error('Taak niet gevonden'), { status: 404 });
         const validPriorities = ['high', 'medium', 'low'];
-        const updated: Task = {
-            ...task,
+        const updatedPatch: Partial<Task> = {
             ...(patch.completed !== undefined ? { completed: Boolean(patch.completed) } : {}),
             ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
             ...(patch.deadline !== undefined ? { deadline: patch.deadline || undefined } : {}),
@@ -68,16 +64,16 @@ export class TaskService {
             ...(patch.assignedSupplierOrgId !== undefined ? { assignedSupplierOrgId: patch.assignedSupplierOrgId?.trim() || undefined } : {}),
             updatedAt: new Date().toISOString(),
         };
-        this.tasks.set(taskId, updated);
-        return updated;
+        const updated = await TasksRepo.updateTask(taskId, updatedPatch);
+        return updated!;
     }
 
     static async deleteTask(taskId: string): Promise<void> {
-        if (!this.tasks.has(taskId)) throw Object.assign(new Error('Taak niet gevonden'), { status: 404 });
-        this.tasks.delete(taskId);
+        const removed = await TasksRepo.removeTask(taskId);
+        if (!removed) throw Object.assign(new Error('Taak niet gevonden'), { status: 404 });
     }
 
     static clearStateForTests(): void {
-        this.tasks.clear();
+        TasksRepo._clearTasksStoreForTests();
     }
 }

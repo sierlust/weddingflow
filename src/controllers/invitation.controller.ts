@@ -80,12 +80,13 @@ export const acceptInvitation = async (token: string, userId: string, orgData?: 
     EntitlementService.consumeUsage(result.invitation.supplier_org_id, 'active_weddings', 1);
     EntitlementService.consumeUsage(result.invitation.supplier_org_id, 'seats', 1);
   }
-  if (result.invitation.wedding_id && result.invitation.supplier_org_id && userId) {
+  if (result.invitation.wedding_id && userId) {
+    const orgId = result.invitation.supplier_org_id || userId;
     DashboardService.ensureSupplierWeddingAssignment({
       weddingId: result.invitation.wedding_id,
-      supplierOrgId: result.invitation.supplier_org_id,
+      supplierOrgId: orgId,
       userId,
-      category: 'Supplier',
+      category: result.invitation.type === 'couple_invite' ? 'Bruidspaar' : 'Supplier',
     });
   }
   const onboardingChecklist = InvitationService.consumeFirstRunChecklist(userId);
@@ -145,12 +146,13 @@ export const acceptInvitationById = async (inviteId: string, userId: string, org
     EntitlementService.consumeUsage(result.invitation.supplier_org_id, 'active_weddings', 1);
     EntitlementService.consumeUsage(result.invitation.supplier_org_id, 'seats', 1);
   }
-  if (result.invitation.wedding_id && result.invitation.supplier_org_id && userId) {
+  if (result.invitation.wedding_id && userId) {
+    const orgId = result.invitation.supplier_org_id || userId;
     DashboardService.ensureSupplierWeddingAssignment({
       weddingId: result.invitation.wedding_id,
-      supplierOrgId: result.invitation.supplier_org_id,
+      supplierOrgId: orgId,
       userId,
-      category: 'Supplier',
+      category: result.invitation.type === 'couple_invite' ? 'Bruidspaar' : 'Supplier',
     });
   }
   const onboardingChecklist = InvitationService.consumeFirstRunChecklist(userId);

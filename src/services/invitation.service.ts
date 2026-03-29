@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { AuditService } from './audit.service';
+import * as InvitationsRepo from '../repositories/invitations.repo';
 
 export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked';
 
@@ -82,11 +83,20 @@ export class InvitationError extends Error {
 }
 
 export class InvitationService {
-  private static invitations: Map<string, InvitationRecord> = new Map();
-  private static checklist: Map<string, Map<string, boolean>> = new Map();
+  // Storage delegated to invitations.repo — accessed via sync accessors.
+  private static get invitations(): Map<string, InvitationRecord> {
+    return InvitationsRepo.getInvitationsMap();
+  }
+  private static get rawTokenByInvitationId(): Map<string, string> {
+    return InvitationsRepo.getRawTokenMap();
+  }
+  private static get checklist(): Map<string, Map<string, boolean>> {
+    return InvitationsRepo.getChecklistMap();
+  }
+  private static get checklistShown(): Set<string> {
+    return InvitationsRepo.getChecklistShownSet();
+  }
   private static assignments: SupplierAssignment[] = [];
-  private static checklistShown: Set<string> = new Set();
-  private static rawTokenByInvitationId: Map<string, string> = new Map();
 
   private static readonly checklistTemplate: Array<{ id: string; label: string }> = [
     { id: 'add_logo', label: 'Add logo' },
@@ -347,11 +357,8 @@ export class InvitationService {
   }
 
   static clearStateForTests() {
-    this.invitations.clear();
-    this.checklist.clear();
+    InvitationsRepo._clearInvitationsStoreForTests();
     this.assignments = [];
-    this.checklistShown.clear();
-    this.rawTokenByInvitationId.clear();
   }
 
   private static hashToken(rawToken: string): string {
