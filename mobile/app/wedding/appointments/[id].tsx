@@ -276,7 +276,7 @@ export default function AppointmentsScreen() {
   const [editing, setEditing] = useState<Appointment | null>(null);
 
   const load = useCallback(async () => {
-    if (!weddingId) return;
+    if (!weddingId) { setLoading(false); return; }
     try {
       const result = await appointmentsApi.list(weddingId);
       const sorted = [...result].sort(

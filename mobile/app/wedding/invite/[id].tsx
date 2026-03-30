@@ -42,7 +42,7 @@ export default function InviteScreen() {
   const [sending, setSending] = useState(false);
 
   const load = useCallback(async () => {
-    if (!weddingId) return;
+    if (!weddingId) { setLoading(false); return; }
     try {
       const list = await invitationsApi.listForWedding(weddingId);
       setInvitations(list);

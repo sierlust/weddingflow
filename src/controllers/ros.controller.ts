@@ -14,10 +14,7 @@ export class ROSController {
         const { id: wedding_id } = req.params;
         const org_id = req.user.supplier_org_id;
         const version = await ROSService.getLatestPublishedVersion(wedding_id, org_id);
-        if (!version) {
-            return res.status(404).json({ error: 'No published run sheet available for this supplier.' });
-        }
-        return res.json(version);
+        return res.json({ version: version ?? null });
     }
 
     /**

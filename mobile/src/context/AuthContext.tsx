@@ -12,6 +12,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  oauthLogin: (provider: 'google' | 'apple', idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfileCategory: (category: string) => void;
 }
@@ -33,19 +34,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
+        // client.ts handles 401 → token refresh → retry internally.
+        // If me() succeeds, the session is restored (possibly after a silent token refresh).
         const user = await authApi.me();
         const profileCategory = await fetchCategory();
         setState({ user, isLoading: false, profileCategory });
-      } catch {
-        const refreshed = await tryRefresh();
-        if (refreshed) {
-          try {
-            const user = await authApi.me();
-            const profileCategory = await fetchCategory();
-            setState({ user, isLoading: false, profileCategory });
-            return;
-          } catch {}
+      } catch (err: any) {
+        // Network/connection errors: server unreachable. Don't wipe the tokens —
+        // they may still be valid once the connection is restored.
+        const isNetworkError =
+          err?.name === 'AbortError' ||
+          err?.name === 'TypeError' ||
+          err?.message?.includes('Geen verbinding');
+
+        if (isNetworkError) {
+          setState({ user: null, isLoading: false, profileCategory: null });
+          return;
         }
+
+        // Auth error (token truly expired/invalid). Clear tokens and go to login.
         await clearTokens();
         setState({ user: null, isLoading: false, profileCategory: null });
       }
@@ -54,6 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(email: string, password: string) {
     const { accessToken, refreshToken } = await authApi.login(email, password);
+    await setTokens(accessToken, refreshToken);
+    const user = await authApi.me();
+    const profileCategory = await fetchCategory();
+    setState({ user, isLoading: false, profileCategory });
+  }
+
+  async function oauthLogin(provider: 'google' | 'apple', idToken: string) {
+    const { accessToken, refreshToken } = await authApi.oauthLogin(provider, idToken);
     await setTokens(accessToken, refreshToken);
     const user = await authApi.me();
     const profileCategory = await fetchCategory();
@@ -78,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, updateProfileCategory }}>
+    <AuthContext.Provider value={{ ...state, login, register, oauthLogin, logout, updateProfileCategory }}>
       {children}
     </AuthContext.Provider>
   );

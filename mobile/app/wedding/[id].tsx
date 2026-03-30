@@ -13,9 +13,10 @@ import {
   Users2, CalendarDays, MessageSquare, ChevronRight,
   Car, Mic, UtensilsCrossed, Moon, Zap, Package, Sparkles,
 } from 'lucide-react-native';
-import { weddingsApi, Wedding } from '../../src/api/weddings';
+import { weddingsApi, Wedding, SupplierAssignment } from '../../src/api/weddings';
 import { documentsApi, Document } from '../../src/api/documents';
 import { supplierApi } from '../../src/api/supplier';
+import { getDashboardConfig, getInfoFields, WEDDING_INFO_FIELDS } from '../../src/config/dashboardConfig';
 
 // ─── Datumhulp (dd-mm-yyyy ↔ yyyy-mm-dd) ────────────────────────────────────
 
@@ -185,7 +186,7 @@ const SECTIONS = [
   { key: 'info',   label: 'Informatie',   Icon: Info },
 ];
 
-function FlyOutMenu({ onSelect }: { onSelect: (key: string) => void }) {
+function FlyOutMenu({ onSelect, sections }: { onSelect: (key: string) => void; sections: typeof SECTIONS }) {
   const [open, setOpen] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -201,7 +202,7 @@ function FlyOutMenu({ onSelect }: { onSelect: (key: string) => void }) {
 
   return (
     <View style={fab.wrapper} pointerEvents="box-none">
-      {SECTIONS.map((sec, i) => {
+      {sections.map((sec, i) => {
         const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -(60 * (i + 1))] });
         const opacity = anim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, 1] });
         return (
@@ -222,6 +223,194 @@ function FlyOutMenu({ onSelect }: { onSelect: (key: string) => void }) {
     </View>
   );
 }
+
+// ─── Leveranciersselectie (koppel-weergave) ──────────────────────────────────
+
+const ALL_CATEGORIES = Object.keys(CATEGORY_ICON) as (keyof typeof CATEGORY_ICON)[];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Trouwlocatie:       '#e8d5d5',
+  Trouwjurk:         '#e8d5e8',
+  Trouwpak:          '#d5dde8',
+  Trouwfotograaf:    '#fde8d0',
+  Videograaf:        '#d0e8fd',
+  Bloemist:          '#d5e8d5',
+  Muziek:            '#e8e4d5',
+  Trouwauto:         '#d5e8e8',
+  Weddingplanner:    '#ede8d5',
+  Ceremoniemeester:  '#e8d5dc',
+  Catering:          '#fde8e0',
+  Bruidskapsel:      '#e0d5e8',
+  'Bruids make-up':  '#e8d5e0',
+  Huwelijksnacht:    '#d5d8e8',
+  Entertainment:     '#e8e8d5',
+  Verhuur:           '#e0e8d5',
+};
+
+const CATEGORY_ICON_COLOR: Record<string, string> = {
+  Trouwlocatie:       '#8B6E6E',
+  Trouwjurk:         '#9B6E9B',
+  Trouwpak:          '#4a72a0',
+  Trouwfotograaf:    '#c47a35',
+  Videograaf:        '#3578c4',
+  Bloemist:          '#5a8a5a',
+  Muziek:            '#9a8a3a',
+  Trouwauto:         '#3a8a8a',
+  Weddingplanner:    '#a07a35',
+  Ceremoniemeester:  '#8B6E6E',
+  Catering:          '#c46a3a',
+  Bruidskapsel:      '#7a5a9a',
+  'Bruids make-up':  '#9a5a7a',
+  Huwelijksnacht:    '#4a5a9a',
+  Entertainment:     '#8a8a3a',
+  Verhuur:           '#4a8a5a',
+};
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('');
+}
+
+function SupplierGrid({
+  weddingId,
+  assignments,
+  onAdd,
+}: {
+  weddingId: string;
+  assignments: SupplierAssignment[];
+  onAdd: (category: string) => void;
+}) {
+  const assignedByCategory = Object.fromEntries(
+    assignments.map(a => [a.category, a])
+  );
+
+  return (
+    <View style={sg.grid}>
+      {ALL_CATEGORIES.map((cat) => {
+        const Icon = CATEGORY_ICON[cat];
+        const assigned = assignedByCategory[cat];
+        const bgColor = CATEGORY_COLORS[cat] ?? '#ede8e8';
+        const iconColor = CATEGORY_ICON_COLOR[cat] ?? '#8B6E6E';
+
+        return (
+          <TouchableOpacity
+            key={cat}
+            style={sg.slot}
+            onPress={() => onAdd(cat)}
+            activeOpacity={0.7}
+          >
+            {assigned ? (
+              <>
+                <View style={[sg.avatar, { backgroundColor: bgColor }]}>
+                  {assigned.supplierName ? (
+                    <Text style={[sg.initials, { color: iconColor }]}>
+                      {getInitials(assigned.supplierName)}
+                    </Text>
+                  ) : (
+                    <Icon size={22} color={iconColor} strokeWidth={1.75} />
+                  )}
+                  <View style={sg.checkBadge}>
+                    <Text style={sg.checkMark}>✓</Text>
+                  </View>
+                </View>
+                <Text style={sg.catLabel} numberOfLines={2}>{cat}</Text>
+                {assigned.supplierName ? (
+                  <Text style={sg.supplierName} numberOfLines={1}>{assigned.supplierName}</Text>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <View style={[sg.avatarEmpty, { borderColor: bgColor }]}>
+                  <Icon size={20} color="#ccc" strokeWidth={1.5} />
+                  <View style={sg.plusBadge}>
+                    <Text style={sg.plusMark}>+</Text>
+                  </View>
+                </View>
+                <Text style={[sg.catLabel, { color: '#bbb' }]} numberOfLines={2}>{cat}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+const sg = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'flex-start',
+  },
+  slot: {
+    width: '22%',
+    alignItems: 'center',
+    gap: 5,
+  },
+  avatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarEmpty: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fafafa',
+  },
+  initials: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  checkBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#5a8a5a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkMark: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  plusBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#8B6E6E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusMark: { color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  catLabel: {
+    fontSize: 10,
+    color: '#555',
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 13,
+  },
+  supplierName: {
+    fontSize: 10,
+    color: '#8B6E6E',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+});
 
 // ─── Hoofd scherm ────────────────────────────────────────────────────────────
 
@@ -252,9 +441,11 @@ export default function WeddingDetailScreen() {
   const [location, setLocation]         = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [notes, setNotes]               = useState('');
-  const [categoryData, setCategoryData] = useState<Record<string, string>>({});
+  const [categoryData, setCategoryData]   = useState<Record<string, string>>({});
+  const [weddingInfo, setWeddingInfo]     = useState<Record<string, string>>({});
 
   const [supplierCategory, setSupplierCategory] = useState<string | null>(null);
+  const [assignments, setAssignments] = useState<SupplierAssignment[]>([]);
 
   useEffect(() => {
     // Probeer eerst de meegestuurde data te gebruiken (snelle render),
@@ -282,7 +473,17 @@ export default function WeddingDetailScreen() {
     setDocsLoading(true);
     documentsApi.list(weddingId).then(setDocs).catch(() => {}).finally(() => setDocsLoading(false));
     // Laad leverancierscategorie voor categorie-specifieke sectie
-    supplierApi.getProfile().then((p) => setSupplierCategory((p as any).category ?? null)).catch(() => {});
+    supplierApi.getProfile().then((p) => {
+      const cat = (p as any).category ?? null;
+      setSupplierCategory(cat);
+      // Laad koppel-leveranciersoverzicht alleen als geen leverancierscategorie
+      if (!cat) {
+        weddingsApi.getMembers(weddingId!).then(m => setAssignments(m.assignments)).catch(() => {});
+      }
+    }).catch(() => {
+      // Geen leveranciersprofiel → koppel: laad leden
+      weddingsApi.getMembers(weddingId!).then(m => setAssignments(m.assignments)).catch(() => {});
+    });
   }, []);
 
   function applyWedding(w: Wedding) {
@@ -293,6 +494,7 @@ export default function WeddingDetailScreen() {
     setContactEmail(w.contact_email ?? '');
     setNotes(w.notes ?? '');
     setCategoryData(w.category_data ?? {});
+    setWeddingInfo(w.wedding_info ?? {});
   }
 
   function scrollToRef(ref: React.RefObject<View>) {
@@ -331,6 +533,7 @@ export default function WeddingDetailScreen() {
         location: location.trim() || undefined,
         contact_email: contactEmail.trim() || undefined,
         notes,
+        wedding_info: weddingInfo,
       });
       applyWedding(updated);
     } catch (e: any) {
@@ -432,6 +635,12 @@ export default function WeddingDetailScreen() {
   ]) : null;
   const WorkIcon = supplierCategory ? (CATEGORY_ICON[supplierCategory] ?? Briefcase) : ClipboardList;
 
+  // ─── Dashboard config op basis van leverancierstype ──────────────────────
+  const dashConfig     = getDashboardConfig(supplierCategory);
+  const activeSections = SECTIONS.filter(s => dashConfig.sections.includes(s.key as any));
+  const activeInfoFields = getInfoFields(dashConfig);
+  const showCollab     = (item: string) => dashConfig.collabItems.includes(item as any);
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView ref={scrollRef} style={s.container} contentContainerStyle={s.content}>
@@ -452,8 +661,39 @@ export default function WeddingDetailScreen() {
           {isArchived ? <Text style={s.archivedBadge}>Gearchiveerd</Text> : null}
         </View>
 
-        {/* Sectie: Mijn inzet (categorie-specifiek) */}
-        <View ref={workRef} style={s.section}>
+        {/* Sectie: Mijn leveranciers (koppel-weergave) */}
+        {!supplierCategory && (
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <Users2 size={16} color="#8B6E6E" strokeWidth={2} />
+              <Text style={s.sectionTitle}>Mijn leveranciers</Text>
+            </View>
+            <SupplierGrid
+              weddingId={wedding.id}
+              assignments={assignments}
+              onAdd={(category) => {
+                const assigned = assignments.find(a => a.category === category);
+                if (assigned) {
+                  Alert.alert(
+                    category,
+                    assigned.supplierName
+                      ? `Toegewezen aan: ${assigned.supplierName}`
+                      : 'Leverancier is toegewezen.',
+                    [{ text: 'OK' }],
+                  );
+                } else {
+                  router.push({
+                    pathname: '/wedding/invite/[id]',
+                    params: { id: wedding.id, title: wedding.title },
+                  } as any);
+                }
+              }}
+            />
+          </View>
+        )}
+
+        {/* Sectie: Mijn inzet (categorie-specifiek) — alleen voor leveranciers */}
+        {supplierCategory !== null && <View ref={workRef} style={s.section}>
           <View style={s.sectionHeader}>
             <WorkIcon size={16} color="#8B6E6E" strokeWidth={2} />
             <Text style={s.sectionTitle}>{supplierCategory ?? 'Mijn inzet'}</Text>
@@ -493,15 +733,17 @@ export default function WeddingDetailScreen() {
               </TouchableOpacity>
             </>
           ) : null}
-        </View>
+        </View>}
 
-        {/* Sectie: Samenwerking */}
+        {/* Sectie: Samenwerking — alleen getoond als 'collab' in de config staat */}
+        {dashConfig.sections.includes('collab') && (
         <View ref={collabRef} style={s.section}>
           <View style={s.sectionHeader}>
             <Users2 size={16} color="#8B6E6E" strokeWidth={2} />
             <Text style={s.sectionTitle}>Samenwerking</Text>
           </View>
 
+          {showCollab('chat') && (
           <TouchableOpacity
             style={s.collabCard}
             onPress={() => router.push({
@@ -519,7 +761,9 @@ export default function WeddingDetailScreen() {
             </View>
             <ChevronRight size={18} color="#ccc" strokeWidth={2} />
           </TouchableOpacity>
+          )}
 
+          {showCollab('ros') && (
           <TouchableOpacity
             style={s.collabCard}
             onPress={() => router.push({
@@ -537,7 +781,9 @@ export default function WeddingDetailScreen() {
             </View>
             <ChevronRight size={18} color="#ccc" strokeWidth={2} />
           </TouchableOpacity>
+          )}
 
+          {showCollab('appointments') && (
           <TouchableOpacity
             style={s.collabCard}
             onPress={() => router.push({
@@ -555,7 +801,9 @@ export default function WeddingDetailScreen() {
             </View>
             <ChevronRight size={18} color="#ccc" strokeWidth={2} />
           </TouchableOpacity>
+          )}
 
+          {showCollab('team') && (
           <TouchableOpacity
             style={[s.collabCard, { marginBottom: 0 }]}
             onPress={() => router.push({
@@ -573,7 +821,9 @@ export default function WeddingDetailScreen() {
             </View>
             <ChevronRight size={18} color="#ccc" strokeWidth={2} />
           </TouchableOpacity>
+          )}
         </View>
+        )}
 
         {/* Sectie: Informatie */}
         <View ref={infoRef} style={s.section}>
@@ -609,6 +859,34 @@ export default function WeddingDetailScreen() {
             autoCapitalize="none"
             placeholderTextColor="#bbb"
           />
+
+          {/* Dynamische bruiloftsvariabelen op basis van leverancierstype */}
+          {activeInfoFields.length > 0 && (() => {
+            // Groepeer de velden per group-label
+            const groups = activeInfoFields.reduce<Record<string, typeof activeInfoFields>>((acc, f) => {
+              (acc[f.group] = acc[f.group] ?? []).push(f);
+              return acc;
+            }, {});
+            return Object.entries(groups).map(([group, fields]) => (
+              <View key={group}>
+                <Text style={s.infoGroupLabel}>{group}</Text>
+                {fields.map(field => (
+                  <View key={field.key}>
+                    <Text style={s.label}>{field.label}</Text>
+                    <TextInput
+                      style={[s.input, field.multiline && s.textAreaSm]}
+                      value={weddingInfo[field.key] ?? ''}
+                      onChangeText={v => setWeddingInfo(prev => ({ ...prev, [field.key]: v }))}
+                      placeholder={field.placeholder}
+                      multiline={field.multiline}
+                      textAlignVertical={field.multiline ? 'top' : 'center'}
+                      placeholderTextColor="#bbb"
+                    />
+                  </View>
+                ))}
+              </View>
+            ));
+          })()}
 
           <TouchableOpacity style={s.saveBtn} onPress={() => confirmSave(saveInfo)} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.saveBtnText}>Wijzigingen opslaan</Text>}
@@ -706,7 +984,7 @@ export default function WeddingDetailScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <FlyOutMenu onSelect={handleSectionSelect} />
+      <FlyOutMenu onSelect={handleSectionSelect} sections={activeSections} />
     </View>
   );
 }
@@ -728,6 +1006,7 @@ const s = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#333' },
   label: { fontSize: 12, fontWeight: '600', color: '#888', marginBottom: 6, textTransform: 'uppercase' },
+  infoGroupLabel: { fontSize: 11, fontWeight: '700', color: '#8B6E6E', marginTop: 16, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 12, fontSize: 15, backgroundColor: '#fafafa', marginBottom: 14, color: '#333' },
   textArea: { minHeight: 140 },
   textAreaSm: { minHeight: 80 },

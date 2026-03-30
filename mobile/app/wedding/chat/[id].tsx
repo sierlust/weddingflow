@@ -83,7 +83,7 @@ export default function ChatScreen() {
   }, []);
 
   useEffect(() => {
-    if (!weddingId) return;
+    if (!weddingId) { setLoading(false); return; }
 
     (async () => {
       try {

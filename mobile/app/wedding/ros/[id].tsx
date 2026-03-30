@@ -222,7 +222,7 @@ export default function RosScreen() {
   const [editingItem, setEditingItem] = useState<Partial<RosItem> | null>(null);
 
   const load = useCallback(async () => {
-    if (!weddingId) return;
+    if (!weddingId) { setLoading(false); return; }
     setLoading(true);
     try {
       const [draft, published] = await Promise.all([

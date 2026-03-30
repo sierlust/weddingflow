@@ -23,7 +23,7 @@ type AccessTokenClaims = {
  * Phase 1.3 Auth Integration Service
  */
 export class AuthService {
-    private static readonly ACCESS_TOKEN_EXPIRY = '15m';
+    private static readonly ACCESS_TOKEN_EXPIRY = '7d';
     private static readonly REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     private static readonly JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
     private static readonly JWT_ISSUER = process.env.JWT_ISSUER || 'managementapp-local';
@@ -40,24 +40,18 @@ export class AuthService {
     private static initialized = false;
 
     private static async ensureInitialized(): Promise<void> {
-        if (this.initialized) {
-            return;
-        }
+        if (this.initialized) return;
         this.initialized = true;
-        const demoUserId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-        const identityKey = this.getIdentityKey('email_password', 'couple@example.com');
-        const existing = await UsersRepo.findUserById(demoUserId);
+        // Demo user opzoeken op e-mail (ID komt nu van Supabase Auth, is niet meer fixed)
+        const demoEmail = 'couple@example.com';
+        const existing = await UsersRepo.findUserByEmail(demoEmail);
         if (!existing) {
             await UsersRepo.createUser(
-                {
-                    id: demoUserId,
-                    email: 'couple@example.com',
-                    name: 'Sarah & Tom',
-                    locale: 'nl',
-                    createdAt: new Date(),
-                },
-                identityKey
-            );
+                { email: demoEmail, name: 'Sarah & Tom', locale: 'nl', createdAt: new Date() },
+                this.getIdentityKey('email_password', demoEmail),
+                [],
+                'DemoCouple2026!'
+            ).catch(e => console.warn('Demo user aanmaken mislukt (al aanwezig?):', e.message));
         }
     }
 
@@ -207,28 +201,34 @@ export class AuthService {
     /**
      * 1.4.4 Register user with identity provider row
      */
-    static async registerUserWithIdentity(email: string, name: string, providerType: string, providerSubject: string) {
+    static async registerUserWithIdentity(
+        email: string,
+        name: string,
+        providerType: string,
+        providerSubject: string,
+        password?: string
+    ) {
         await this.ensureInitialized();
         const normalizedEmail = email.toLowerCase();
         const identityKey = this.getIdentityKey(providerType, providerSubject);
         const existingId = await UsersRepo.findUserByProvider(providerType, providerSubject);
-        if (existingId) {
-            return existingId;
-        }
-        const newUserId = crypto.randomUUID();
-        const emailIdentityKey = this.getIdentityKey('email_password', normalizedEmail);
-        await UsersRepo.createUser(
-            {
-                id: newUserId,
-                email: normalizedEmail,
-                name,
-                locale: 'nl',
-                createdAt: new Date(),
-            },
+        if (existingId) return existingId;
+
+        const user = await UsersRepo.createUser(
+            { email: normalizedEmail, name, locale: 'nl', createdAt: new Date() },
             identityKey,
-            [emailIdentityKey]
+            [],
+            password
         );
-        return newUserId;
+        return user.id;
+    }
+
+    /**
+     * Verifieer e-mail + wachtwoord via Supabase Auth.
+     * Geeft de userId terug bij succes, anders null.
+     */
+    static async verifyEmailPassword(email: string, password: string): Promise<string | null> {
+        return UsersRepo.verifyEmailPassword(email, password);
     }
 
     static async rollbackUserRegistration(userId: string) {

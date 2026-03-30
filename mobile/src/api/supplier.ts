@@ -16,8 +16,8 @@ export interface SupplierProfile {
 
 export const supplierApi = {
   getProfile: (): Promise<SupplierProfile> =>
-    api.get<{ profile: SupplierProfile }>('/suppliers/profile')
-      .then((r: any) => r.profile ?? r)
+    api.get<any>('/suppliers/profile')
+      .then((r: any) => r.supplier ?? r.profile ?? r)
       .catch((e: any) => {
         if (e.message?.includes('404') || e.message?.includes('niet gevonden')) {
           return {} as SupplierProfile;
@@ -26,6 +26,6 @@ export const supplierApi = {
       }),
 
   updateProfile: (data: Partial<SupplierProfile>): Promise<SupplierProfile> =>
-    api.patch<{ profile: SupplierProfile }>('/suppliers/profile', data)
-      .then((r: any) => r.profile ?? r),
+    api.patch<any>('/suppliers/profile', data)
+      .then((r: any) => r.supplier ?? r.profile ?? r),
 };

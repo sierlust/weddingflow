@@ -31,12 +31,12 @@ export const invitationsApi = {
       .then((r: any) => r.invitations ?? r)
       .catch(() => [] as Invitation[]),
 
-  accept: (inviteId: string, _userId?: string): Promise<{ invitation: Invitation }> =>
-    api.post<{ invitation: Invitation }>('/invitations/accept', { invitationId: inviteId }),
+  accept: (inviteId: string, userId?: string): Promise<{ invitation: Invitation }> =>
+    api.post<{ invitation: Invitation }>('/invitations/accept', { inviteId, userId }),
 
   decline: (inviteId: string, reason: string): Promise<{ id: string; status: string }> =>
     api.post<{ id: string; status: string }>('/invitations/decline', {
-      invitationId: inviteId,
+      inviteId,
       reason,
     }),
 

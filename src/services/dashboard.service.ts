@@ -129,6 +129,7 @@ type UpdateWeddingInput = {
   status?: WeddingStatus;
   updatedByUserId?: string;
   categoryData?: Record<string, string>;
+  weddingInfo?: Record<string, string>;
 };
 
 import * as WeddingsRepo from '../repositories/weddings.repo';
@@ -291,11 +292,18 @@ export class DashboardService {
       (sa) => sa.weddingId === weddingId
     );
     return {
-      assignments: assignments.map(a => ({
-        supplierOrgId: a.supplierOrgId,
-        category: a.category,
-        status: a.status,
-      })),
+      assignments: assignments.map(a => {
+        const staff = this.data.staffAssignments.find(
+          sa => sa.supplierOrgId === a.supplierOrgId && sa.weddingId === weddingId
+        );
+        const user = staff ? this.data.users.find(u => u.id === staff.userId) : null;
+        return {
+          supplierOrgId: a.supplierOrgId,
+          category: a.category,
+          status: a.status,
+          supplierName: user?.name ?? null,
+        };
+      }),
       staff: staffAssignments.map(sa => ({
         userId: sa.userId,
         supplierOrgId: sa.supplierOrgId,
@@ -491,6 +499,10 @@ export class DashboardService {
       wedding.category_data = { ...(wedding.category_data ?? {}), ...input.categoryData };
     }
 
+    if (input.weddingInfo !== undefined && typeof input.weddingInfo === 'object') {
+      wedding.wedding_info = { ...(wedding.wedding_info ?? {}), ...input.weddingInfo };
+    }
+
     const validStatuses: WeddingStatus[] = ['draft', 'invited', 'active', 'completed', 'canceled'];
     if (typeof input.status === 'string' && validStatuses.includes(input.status as WeddingStatus)) {
       wedding.status = input.status as WeddingStatus;
@@ -513,6 +525,7 @@ export class DashboardService {
         notes: wedding.notes,
         contact_email: wedding.contact_email,
         category_data: wedding.category_data ? { ...wedding.category_data } : undefined,
+        wedding_info: wedding.wedding_info ? { ...wedding.wedding_info } : undefined,
       },
     };
   }

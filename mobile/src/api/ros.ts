@@ -36,7 +36,7 @@ export const rosApi = {
       .catch(() => ({ wedding_id: weddingId, draft_json: [], updated_at: '' } as RosDraft)),
 
   saveDraft: (weddingId: string, items: RosItem[]): Promise<RosDraft> =>
-    api.post<{ draft: RosDraft }>(`/weddings/${weddingId}/ros/draft`, { items })
+    api.post<{ draft: RosDraft }>(`/weddings/${weddingId}/ros/draft`, { draft_json: items })
       .then((r: any) => r.draft ?? r),
 
   getPublished: (weddingId: string): Promise<RosVersion | null> =>

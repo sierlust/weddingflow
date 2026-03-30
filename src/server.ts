@@ -26,21 +26,16 @@ import { DocumentController } from './controllers/document.controller';
 import { DocumentService } from './services/collaboration.service';
 import { UploadController } from './controllers/upload.controller';
 import { CalendarController } from './controllers/calendar.controller';
-import { AuditController } from './controllers/audit.controller';
-import { BillingController } from './controllers/billing.controller';
 import { NotificationController } from './controllers/notification.controller';
 import { SupplierController } from './controllers/supplier.controller';
-import { GuestController } from './controllers/guest.controller';
-import { TaskController } from './controllers/task.controller';
-import { BudgetController } from './controllers/budget.controller';
 import {
   createWedding,
-  getDashboardSkeletons,
   getSupplierWeddings,
   getWeddingById,
   searchWeddings,
   updateWedding,
 } from './controllers/dashboard.controller';
+import { findWeddingById } from './repositories/weddings.repo';
 import { authMiddleware } from './middleware/auth.middleware';
 import { InvitationService } from './services/invitation.service';
 import { RealtimeService } from './services/realtime.service';
@@ -69,129 +64,6 @@ const port = Number(process.env.PORT || 3000);
 
 app.use(cors());
 app.use(express.json({ limit: '8mb' }));
-app.use(express.static(path.join(process.cwd(), 'public')));
-const publicDir = path.join(process.cwd(), 'public');
-const publicIndexPath = path.join(publicDir, 'index.html');
-const suppliersIndexPath = path.join(publicDir, 'suppliers.html');
-const supplierDetailPath = path.join(publicDir, 'supplier.html');
-const runsheetPath = path.join(publicDir, 'runsheet.html');
-const profilePath = path.join(publicDir, 'profile.html');
-const p0Dir = path.join(publicDir, 'p0');
-const p1Dir = path.join(publicDir, 'p1');
-const p2Dir = path.join(publicDir, 'p2');
-const p3Dir = path.join(publicDir, 'p3');
-// Public marketing pages
-const publicPages: Record<string, string> = {
-  '/': 'home.html',
-  '/login': 'p0/019-inlogpagina.html',
-  '/register': 'p0/023-registratie-rolkeuze.html',
-  '/inspiratie': 'inspiratie.html',
-  '/hoe-het-werkt': 'hoe-het-werkt.html',
-  '/hoe-het-werkt-leveranciers': 'hoe-het-werkt.html',
-  '/prijzen': 'prijzen.html',
-  '/over-ons': 'over-ons.html',
-  '/blog': 'blog.html',
-  '/faq': 'faq.html',
-  '/contact': 'contact.html',
-  '/algemene-voorwaarden': 'algemene-voorwaarden.html',
-  '/privacybeleid': 'privacybeleid.html',
-  '/cookiebeleid': 'cookiebeleid.html',
-  '/sitemap': 'sitemap-page.html',
-  '/p0': 'p0/index.html',
-  '/p1': 'p1/index.html',
-  '/p2': 'p2/index.html',
-  '/p3': 'p3/index.html',
-};
-for (const [route, file] of Object.entries(publicPages)) {
-  app.get(route, (_req: any, res: any) => {
-    res.sendFile(path.join(publicDir, file));
-  });
-}
-
-app.get('/p0/:page', (req: any, res: any) => {
-  const page = String(req.params.page || '').trim();
-  if (!page) {
-    return res.sendFile(path.join(p0Dir, 'index.html'));
-  }
-  const safeName = path.basename(page);
-  const fileName = safeName.endsWith('.html') ? safeName : `${safeName}.html`;
-  const filePath = path.join(p0Dir, fileName);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('P0 page not found');
-  }
-  return res.sendFile(filePath);
-});
-
-app.get('/p1/:page', (req: any, res: any) => {
-  const page = String(req.params.page || '').trim();
-  if (!page) {
-    return res.sendFile(path.join(p1Dir, 'index.html'));
-  }
-  const safeName = path.basename(page);
-  const fileName = safeName.endsWith('.html') ? safeName : `${safeName}.html`;
-  const filePath = path.join(p1Dir, fileName);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('P1 page not found');
-  }
-  return res.sendFile(filePath);
-});
-
-app.get('/p2/:page', (req: any, res: any) => {
-  const page = String(req.params.page || '').trim();
-  if (!page) {
-    return res.sendFile(path.join(p2Dir, 'index.html'));
-  }
-  const safeName = path.basename(page);
-  const fileName = safeName.endsWith('.html') ? safeName : `${safeName}.html`;
-  const filePath = path.join(p2Dir, fileName);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('P2 page not found');
-  }
-  return res.sendFile(filePath);
-});
-
-app.get('/p3/:page', (req: any, res: any) => {
-  const page = String(req.params.page || '').trim();
-  if (!page) {
-    return res.sendFile(path.join(p3Dir, 'index.html'));
-  }
-  const safeName = path.basename(page);
-  const fileName = safeName.endsWith('.html') ? safeName : `${safeName}.html`;
-  const filePath = path.join(p3Dir, fileName);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('P3 page not found');
-  }
-  return res.sendFile(filePath);
-});
-
-// App routes (require auth — served by SPA)
-app.get(
-  [
-    '/invite',
-    '/dashboard',
-    '/dashboard/tools',
-    '/dashboard/invites',
-    '/dashboard/chat',
-    '/dashboard/planning',
-    '/dashboard/bestanden',
-    '/dashboard/instellingen',
-  ],
-  (_req: any, res: any) => {
-    res.sendFile(publicIndexPath);
-  }
-);
-app.get('/suppliers', (_req: any, res: any) => {
-  res.sendFile(suppliersIndexPath);
-});
-app.get('/suppliers/:id', (_req: any, res: any) => {
-  res.sendFile(supplierDetailPath);
-});
-app.get('/runsheet', (_req: any, res: any) => {
-  res.sendFile(runsheetPath);
-});
-app.get('/profile', (_req: any, res: any) => {
-  res.sendFile(profilePath);
-});
 
 app.use((req: any, res: any, next: any) => {
   const isMutating = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE';
@@ -234,9 +106,6 @@ app.use((req: any, _res: any, next: any) => {
   if (req.path.startsWith('/v1/auth/')) {
     return next();
   }
-  if (req.path === '/v1/billing/webhook' || req.path === '/v1/billing/change-plan') {
-    return next();
-  }
 
   const orgId = req.user?.supplier_org_id;
   if (!orgId) {
@@ -260,22 +129,26 @@ app.get('/health', (_req: any, res: any) => {
   res.json({ ok: true, service: 'managementapp-local-api' });
 });
 
+// Auth
 app.get('/v1/auth/.well-known/openid-configuration', wrap(AuthController.discovery));
 app.get('/v1/auth/jwks.json', wrap(AuthController.jwks));
 app.post('/v1/auth/login', wrap(AuthController.login));
+app.post('/v1/auth/oauth', wrap(AuthController.oauthLogin));
 app.post('/v1/auth/register', wrap(AuthController.register));
 app.post('/v1/auth/refresh', wrap(AuthController.refresh));
 app.post('/v1/auth/logout', wrap(AuthController.logout));
 app.get('/v1/auth/me', wrap(AuthController.me));
+
+// Suppliers
 app.get('/v1/suppliers', wrap(SupplierController.list));
 app.get('/v1/suppliers/profile', wrap(SupplierController.getOwnProfile));
 app.patch('/v1/suppliers/profile', wrap(SupplierController.upsertOwnProfile));
 app.get('/v1/suppliers/:id', wrap(SupplierController.getById));
 
+// Invitations
 app.post('/v1/weddings/:id/suppliers/invite', wrap(async (req: any, res: any) => {
   const isPlatformAdmin = Boolean(req.user?.is_platform_admin);
   const { id: wedding_id } = req.params;
-  // Check user is assigned to this wedding
   const isAssigned = DashboardService.isUserAssignedToWedding(req.user.sub, wedding_id);
   if (!isAssigned && !isPlatformAdmin) {
     return res.status(403).json({ error: 'Je bent niet toegewezen aan deze bruiloft.' });
@@ -377,12 +250,13 @@ app.get('/v1/invitations/mine', wrap(async (req: any, res: any) => {
   const result = await listPendingInvitationsForEmail(user.email);
   res.json({ invitations: result });
 }));
+
+// Weddings
 app.get('/v1/weddings/:id/members', wrap(async (req: any, res: any) => {
   const { id: weddingId } = req.params;
   const members = DashboardService.getWeddingMembers(weddingId);
   res.json({ members });
 }));
-
 app.get('/v1/weddings', wrap(async (req: any, res: any) => {
   const result = await getSupplierWeddings({
     userId: req.user.sub,
@@ -456,6 +330,7 @@ app.patch('/v1/weddings/:id', wrap(async (req: any, res: any) => {
       contactEmail: typeof req.body?.contact_email === 'string' ? req.body.contact_email : undefined,
       status: typeof req.body?.status === 'string' ? req.body.status : undefined,
       categoryData: req.body?.category_data !== undefined && typeof req.body.category_data === 'object' && !Array.isArray(req.body.category_data) ? req.body.category_data : undefined,
+      weddingInfo: req.body?.wedding_info !== undefined && typeof req.body.wedding_info === 'object' && !Array.isArray(req.body.wedding_info) ? req.body.wedding_info : undefined,
       updatedByUserId: req.user?.sub || 'demo-user',
     });
     res.json(result);
@@ -474,32 +349,18 @@ app.get('/v1/weddings/search', wrap(async (req: any, res: any) => {
   });
   res.json(result);
 }));
-app.get('/v1/dashboard/skeletons', (_req: any, res: any) => {
-  res.json(getDashboardSkeletons());
-});
 app.get('/v1/weddings/:id', wrap(async (req: any, res: any) => {
-  const wedding = getWeddingById(String(req.params?.id || '').trim());
+  const id = String(req.params?.id || '').trim();
+  let wedding = getWeddingById(id);
+  if (!wedding) {
+    const repo = await findWeddingById(id);
+    if (repo) wedding = getWeddingById(id) ?? repo as any;
+  }
   if (!wedding) return res.status(404).json({ error: 'Bruiloft niet gevonden.' });
   res.json({ wedding });
 }));
 
-// Guests (RSVP)
-app.get('/v1/weddings/:id/guests', wrap(GuestController.list));
-app.post('/v1/weddings/:id/guests', wrap(GuestController.create));
-app.patch('/v1/guests/:guestId', wrap(GuestController.update));
-app.delete('/v1/guests/:guestId', wrap(GuestController.remove));
-
-// Tasks (checklist)
-app.get('/v1/weddings/:id/tasks', wrap(TaskController.list));
-app.post('/v1/weddings/:id/tasks', wrap(TaskController.create));
-app.patch('/v1/tasks/:taskId', wrap(TaskController.update));
-app.delete('/v1/tasks/:taskId', wrap(TaskController.remove));
-
-// Budget
-app.get('/v1/weddings/:id/budget', wrap(BudgetController.list));
-app.post('/v1/weddings/:id/budget', wrap(BudgetController.create));
-app.delete('/v1/budget/:entryId', wrap(BudgetController.remove));
-
+// Chat
 app.post('/v1/weddings/:id/threads', wrap(ChatController.createThread));
 app.get('/v1/weddings/:id/threads', wrap(ChatController.listThreads));
 app.get('/v1/threads/:threadId/messages', wrap(ChatController.listMessages));
@@ -510,6 +371,7 @@ app.post('/v1/messages/:messageId/pin', wrap(ChatController.pin));
 app.post('/v1/messages/:messageId/convert-to-appointment', wrap(ChatController.convertToAppointment));
 app.post('/v1/messages/:messageId/attach-document', wrap(ChatController.attachDocument));
 
+// Documents
 app.post('/v1/documents/presign', wrap(DocumentController.presign));
 app.post('/v1/weddings/:weddingId/documents', wrap(DocumentController.create));
 app.get('/v1/weddings/:id/documents', wrap(DocumentController.list));
@@ -569,46 +431,12 @@ app.get('/v1/uploads/:filename', (req: any, res: any) => {
   res.sendFile(filePath);
 });
 
+// Multipart upload
 app.post('/v1/uploads/initiate', wrap(UploadController.initiate));
 app.post('/v1/uploads/:uploadId/parts/:partNumber', wrap(UploadController.uploadPart));
 app.post('/v1/uploads/:uploadId/abort', wrap(UploadController.abort));
 
-// Profile photo upload (base64 body)
-app.post('/v1/profile/photo', wrap(async (req: any, res: any) => {
-  const { data, filename } = req.body || {};
-  if (!data || typeof data !== 'string') {
-    return res.status(400).json({ error: 'data (base64) is verplicht' });
-  }
-
-  // Extract mime type and raw base64
-  const match = data.match(/^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,(.+)$/);
-  if (!match) {
-    return res.status(400).json({ error: 'Ongeldig afbeeldingsformaat. Gebruik PNG, JPEG, GIF of WebP.' });
-  }
-  const ext = match[1] === 'jpeg' ? 'jpg' : match[1] === 'svg+xml' ? 'svg' : match[1];
-  const buffer = Buffer.from(match[2] as string, 'base64');
-
-  // Limit to 5MB
-  if (buffer.length > 5 * 1024 * 1024) {
-    return res.status(400).json({ error: 'Afbeelding is te groot (max 5MB).' });
-  }
-
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-  fs.mkdirSync(uploadsDir, { recursive: true });
-
-  const safeName = String(filename || 'photo')
-    .replace(/[^a-zA-Z0-9._-]/g, '_')
-    .slice(0, 60);
-  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const savedFilename = `${uniqueSuffix}-${safeName}.${ext}`;
-  const filePath = path.join(uploadsDir, savedFilename);
-
-  fs.writeFileSync(filePath, buffer);
-
-  const photoUrl = `/uploads/${savedFilename}`;
-  return res.json({ photoUrl });
-}));
-
+// Appointments / Calendar
 app.get('/v1/weddings/:id/appointments', wrap(CalendarController.list));
 app.post('/v1/weddings/:id/appointments', wrap(CalendarController.create));
 app.patch('/v1/appointments/:id', wrap(CalendarController.update));
@@ -617,20 +445,12 @@ app.get('/v1/weddings/:id/calendar.ics', wrap(CalendarController.getIcs));
 app.get('/v1/weddings/:id/calendar-subscription-url', wrap(CalendarController.getSubscriptionUrl));
 app.get('/v1/appointments/:id/calendar.ics', wrap(CalendarController.getSingleEventIcs));
 
-app.get('/v1/weddings/:id/audit', wrap(AuditController.list));
-
-app.post('/v1/billing/webhook', wrap(async (req: any, res: any) => {
-  if (typeof req.body !== 'string') {
-    req.body = JSON.stringify(req.body || {});
-  }
-  return BillingController.webhook(req, res);
-}));
-app.post('/v1/billing/change-plan', wrap(BillingController.changePlan));
-
+// Push notifications (mobile device token + preferences)
 app.post('/v1/notifications/register-token', wrap(NotificationController.registerToken));
 app.patch('/v1/notifications/preferences', wrap(NotificationController.updatePreferences));
 app.patch('/v1/notifications/mute', wrap(NotificationController.muteWedding));
 
+// Run of Show (ROS)
 app.post('/v1/weddings/:id/ros/publish', wrap(ROSController.publish));
 app.post('/v1/weddings/:id/ros/draft', wrap(ROSController.saveDraft));
 app.get('/v1/weddings/:id/ros/draft', wrap(ROSController.getDraft));
@@ -710,7 +530,7 @@ async function startServer(): Promise<void> {
   });
 
   httpServer.listen(port, () => {
-    console.log(`ManagementApp local API running on http://localhost:${port}`);
+    console.log(`ManagementApp API running on http://localhost:${port}`);
   });
 }
 

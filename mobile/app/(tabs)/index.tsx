@@ -45,7 +45,10 @@ export default function DashboardScreen() {
       setWeddings(data);
       invitationsApi.mine().then(list => setPendingInviteCount(list.length)).catch(() => {});
     } catch (e: any) {
-      Alert.alert('Fout', e.message);
+      // Auth errors are handled globally by AuthContext (redirect to login).
+      if (!e?.message?.includes('Sessie verlopen')) {
+        Alert.alert('Fout', e.message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

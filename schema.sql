@@ -31,6 +31,8 @@ CREATE TABLE user_identities (
 CREATE TABLE refresh_tokens (
   token TEXT PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  org_claims JSONB DEFAULT '[]',
+  expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -43,6 +45,8 @@ CREATE TABLE weddings (
   status TEXT DEFAULT 'active',
   owner_id UUID REFERENCES users(id),
   couple_names TEXT,
+  category_data JSONB DEFAULT '{}',
+  wedding_info JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -225,3 +229,12 @@ CREATE TABLE budget_entries (
   paid BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Permissions: service_role (backend) en authenticated (PostgREST) krijgen volledige toegang
+GRANT USAGE ON SCHEMA public TO service_role, authenticated, anon;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;

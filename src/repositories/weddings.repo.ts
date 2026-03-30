@@ -17,6 +17,8 @@ export type Wedding = {
     notes?: string;
     contact_email?: string;
     category_data?: Record<string, string>;
+    /** Globale bruiloftsvariabelen — gedeeld door alle leveranciers */
+    wedding_info?: Record<string, string>;
 };
 
 export type Assignment = {
@@ -67,6 +69,7 @@ function rowToWedding(row: any): Wedding {
         notes: row.notes,
         contact_email: row.contact_email,
         category_data: row.category_data,
+        wedding_info: row.wedding_info ?? {},
     };
 }
 
@@ -178,6 +181,7 @@ export async function updateWedding(id: string, patch: Partial<Wedding>): Promis
     if (patch.notes !== undefined) dbPatch.notes = patch.notes;
     if (patch.contact_email !== undefined) dbPatch.contact_email = patch.contact_email;
     if (patch.category_data !== undefined) dbPatch.category_data = patch.category_data;
+    if (patch.wedding_info !== undefined) dbPatch.wedding_info = patch.wedding_info;
 
     const { data, error } = await db.from('weddings').update(dbPatch).eq('id', id).select().single();
     if (error || !data) return null;
